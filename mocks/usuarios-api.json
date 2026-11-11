@@ -1136,6 +1136,188 @@
       "responseMode": null,
       "streamingMode": null,
       "streamingInterval": 0
+    },
+    {
+      "uuid": "c0ebe6ed-83bc-548c-a438-294c4be56233",
+      "type": "http",
+      "documentation": "WSDL del servicio SOAP de usuarios (GET /soap/usuarios?wsdl).",
+      "method": "get",
+      "endpoint": "soap/usuarios",
+      "responses": [
+        {
+          "uuid": "c3514c62-5251-5fd5-a143-747b4b174713",
+          "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<wsdl:definitions name=\"UsuariosService\"\n                  targetNamespace=\"http://poc.qa/usuarios\"\n                  xmlns:wsdl=\"http://schemas.xmlsoap.org/wsdl/\"\n                  xmlns:soap=\"http://schemas.xmlsoap.org/wsdl/soap/\"\n                  xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n                  xmlns:usu=\"http://poc.qa/usuarios\">\n\n  <wsdl:types>\n    <xsd:schema targetNamespace=\"http://poc.qa/usuarios\" elementFormDefault=\"qualified\">\n      <xsd:simpleType name=\"Rol\">\n        <xsd:restriction base=\"xsd:string\">\n          <xsd:enumeration value=\"admin\"/>\n          <xsd:enumeration value=\"supervisor\"/>\n          <xsd:enumeration value=\"usuario\"/>\n        </xsd:restriction>\n      </xsd:simpleType>\n\n      <xsd:complexType name=\"Usuario\">\n        <xsd:sequence>\n          <xsd:element name=\"id\" type=\"xsd:int\"/>\n          <xsd:element name=\"nombre\">\n            <xsd:simpleType>\n              <xsd:restriction base=\"xsd:string\">\n                <xsd:pattern value=\".*\\S.*\"/>\n              </xsd:restriction>\n            </xsd:simpleType>\n          </xsd:element>\n          <xsd:element name=\"email\">\n            <xsd:simpleType>\n              <xsd:restriction base=\"xsd:string\">\n                <xsd:pattern value=\"[^@\\s]+@[^@\\s]+\\.[^@\\s]+\"/>\n              </xsd:restriction>\n            </xsd:simpleType>\n          </xsd:element>\n          <xsd:element name=\"rol\" type=\"usu:Rol\"/>\n          <xsd:element name=\"activo\" type=\"xsd:boolean\"/>\n        </xsd:sequence>\n      </xsd:complexType>\n\n      <xsd:element name=\"ObtenerUsuario\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"id\" type=\"xsd:int\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n\n      <xsd:element name=\"ObtenerUsuarioResponse\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"usuario\" type=\"usu:Usuario\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n\n      <xsd:element name=\"ListarUsuarios\">\n        <xsd:complexType>\n          <xsd:sequence/>\n        </xsd:complexType>\n      </xsd:element>\n\n      <xsd:element name=\"ListarUsuariosResponse\">\n        <xsd:complexType>\n          <xsd:sequence>\n            <xsd:element name=\"usuario\" type=\"usu:Usuario\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>\n          </xsd:sequence>\n        </xsd:complexType>\n      </xsd:element>\n    </xsd:schema>\n  </wsdl:types>\n\n  <wsdl:message name=\"ObtenerUsuarioRequest\">\n    <wsdl:part name=\"parameters\" element=\"usu:ObtenerUsuario\"/>\n  </wsdl:message>\n  <wsdl:message name=\"ObtenerUsuarioResponse\">\n    <wsdl:part name=\"parameters\" element=\"usu:ObtenerUsuarioResponse\"/>\n  </wsdl:message>\n  <wsdl:message name=\"ListarUsuariosRequest\">\n    <wsdl:part name=\"parameters\" element=\"usu:ListarUsuarios\"/>\n  </wsdl:message>\n  <wsdl:message name=\"ListarUsuariosResponse\">\n    <wsdl:part name=\"parameters\" element=\"usu:ListarUsuariosResponse\"/>\n  </wsdl:message>\n\n  <wsdl:portType name=\"UsuariosPortType\">\n    <wsdl:operation name=\"ObtenerUsuario\">\n      <wsdl:input message=\"usu:ObtenerUsuarioRequest\"/>\n      <wsdl:output message=\"usu:ObtenerUsuarioResponse\"/>\n    </wsdl:operation>\n    <wsdl:operation name=\"ListarUsuarios\">\n      <wsdl:input message=\"usu:ListarUsuariosRequest\"/>\n      <wsdl:output message=\"usu:ListarUsuariosResponse\"/>\n    </wsdl:operation>\n  </wsdl:portType>\n\n  <wsdl:binding name=\"UsuariosBinding\" type=\"usu:UsuariosPortType\">\n    <soap:binding style=\"document\" transport=\"http://schemas.xmlsoap.org/soap/http\"/>\n    <wsdl:operation name=\"ObtenerUsuario\">\n      <soap:operation soapAction=\"http://poc.qa/usuarios/ObtenerUsuario\"/>\n      <wsdl:input><soap:body use=\"literal\"/></wsdl:input>\n      <wsdl:output><soap:body use=\"literal\"/></wsdl:output>\n    </wsdl:operation>\n    <wsdl:operation name=\"ListarUsuarios\">\n      <soap:operation soapAction=\"http://poc.qa/usuarios/ListarUsuarios\"/>\n      <wsdl:input><soap:body use=\"literal\"/></wsdl:input>\n      <wsdl:output><soap:body use=\"literal\"/></wsdl:output>\n    </wsdl:operation>\n  </wsdl:binding>\n\n  <wsdl:service name=\"UsuariosService\">\n    <wsdl:port name=\"UsuariosPort\" binding=\"usu:UsuariosBinding\">\n      <soap:address location=\"http://localhost:3001/soap/usuarios\"/>\n    </wsdl:port>\n  </wsdl:service>\n</wsdl:definitions>\n",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "WSDL",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/xml; charset=utf-8"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "1726e7f3-1466-52cb-bacd-af1881b74d7e",
+      "type": "http",
+      "documentation": "Servicio SOAP 1.1 de usuarios. Usa los prefijos soapenv y usu; comparte el data bucket usuarios con la API REST.",
+      "method": "post",
+      "endpoint": "soap/usuarios",
+      "responses": [
+        {
+          "uuid": "f8b6e6f2-2c5b-5de8-a4fc-f4a980b559f3",
+          "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:usu=\"http://poc.qa/usuarios\">\n  <soapenv:Body>\n    <soapenv:Fault>\n      <faultcode>soapenv:Client</faultcode>\n      <faultstring>Solicitud SOAP inválida: operación desconocida o XML mal formado.</faultstring>\n    </soapenv:Fault>\n  </soapenv:Body>\n</soapenv:Envelope>\n",
+          "latency": 0,
+          "statusCode": 500,
+          "label": "SOAP Fault: operación desconocida o XML inválido",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/xml; charset=utf-8"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "83393601-c260-5335-ac27-c59e3a794da5",
+          "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:usu=\"http://poc.qa/usuarios\">\n  <soapenv:Body>\n    <usu:ObtenerUsuarioResponse>\n{{#each (dataRaw 'usuarios')}}{{#if (eq this.id (parseInt (body 'soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text')))}}      <usu:usuario>\n        <usu:id>{{this.id}}</usu:id>\n        <usu:nombre>{{this.nombre}}</usu:nombre>\n        <usu:email>{{this.email}}</usu:email>\n        <usu:rol>{{this.rol}}</usu:rol>\n        <usu:activo>{{this.activo}}</usu:activo>\n      </usu:usuario>\n{{/if}}{{/each}}    </usu:ObtenerUsuarioResponse>\n  </soapenv:Body>\n</soapenv:Envelope>\n",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "ObtenerUsuario: usuario existente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/xml; charset=utf-8"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text",
+              "value": ".+",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'usuarios')}}{{#if (eq this.id (parseInt (body 'soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text')))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "07720bf3-3733-5e66-b5de-0fcec196e74a",
+          "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:usu=\"http://poc.qa/usuarios\">\n  <soapenv:Body>\n    <soapenv:Fault>\n      <faultcode>soapenv:Client</faultcode>\n      <faultstring>El usuario {{body 'soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text'}} no existe.</faultstring>\n    </soapenv:Fault>\n  </soapenv:Body>\n</soapenv:Envelope>\n",
+          "latency": 0,
+          "statusCode": 500,
+          "label": "SOAP Fault: usuario inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/xml; charset=utf-8"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text",
+              "value": ".+",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'usuarios')}}{{#if (eq this.id (parseInt (body 'soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text')))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "f84cff6a-366a-5c3d-b6e3-4491e82f0b2a",
+          "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:usu=\"http://poc.qa/usuarios\">\n  <soapenv:Body>\n    <usu:ListarUsuariosResponse>\n{{#each (dataRaw 'usuarios')}}      <usu:usuario>\n        <usu:id>{{this.id}}</usu:id>\n        <usu:nombre>{{this.nombre}}</usu:nombre>\n        <usu:email>{{this.email}}</usu:email>\n        <usu:rol>{{this.rol}}</usu:rol>\n        <usu:activo>{{this.activo}}</usu:activo>\n      </usu:usuario>\n{{/each}}    </usu:ListarUsuariosResponse>\n  </soapenv:Body>\n</soapenv:Envelope>\n",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "ListarUsuarios",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/xml; charset=utf-8"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "soapenv:Envelope.soapenv:Body.usu:ListarUsuarios",
+              "value": "",
+              "invert": true,
+              "operator": "null"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
     }
   ],
   "rootChildren": [
@@ -1222,6 +1404,14 @@
     {
       "type": "route",
       "uuid": "bbe8a7ab-eeff-5151-a003-3b36444da2fe"
+    },
+    {
+      "type": "route",
+      "uuid": "c0ebe6ed-83bc-548c-a438-294c4be56233"
+    },
+    {
+      "type": "route",
+      "uuid": "1726e7f3-1466-52cb-bacd-af1881b74d7e"
     }
   ],
   "proxyMode": false,
