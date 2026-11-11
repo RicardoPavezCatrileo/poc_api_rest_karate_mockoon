@@ -7,6 +7,8 @@ trigger:
       - main
       - feature/*
 
+# Solo aplica si el repositorio está en GitHub o Bitbucket. Con Azure Repos, la validación de PR
+# se configura con la política de rama "Build validation" (ver docs/azure-boards.md).
 pr:
   branches:
     include:

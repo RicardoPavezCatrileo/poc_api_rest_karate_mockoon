@@ -864,17 +864,19 @@ Start-Process .\target\karate-reports\karate-summary.html</pre>
           <tr><td>Gatling, perfil estrés</td><td><span class="badge">LISTO</span></td><td class="n">9.570 solicitudes, 162,2 TPS, 0 errores; el CPU del mock crece con cada escalón (hallazgo documentado)</td></tr>
           <tr><td>Contratos OpenAPI y WSDL/XSD</td><td><span class="badge">LISTO</span></td><td>Incluidos en la suite completa (<code>@contract</code>)</td></tr>
           <tr><td>SQL (H2)</td><td><span class="badge">LISTO</span></td><td>JOIN, LEFT JOIN, agregaciones, conciliación, integridad e inyección</td></tr>
-          <tr><td>CI: GitHub Actions y Azure DevOps</td><td><span class="badge wip">PARCIAL</span></td><td>Pipelines escritos y equivalentes; los pasos nuevos de performance aún no se ejecutaron en un agente</td></tr>
+          <tr><td>CI: GitHub Actions</td><td><span class="badge">LISTO</span></td><td class="n">Runs en verde en <code>main</code> y <code>feature/performance-metrics</code> (12 pasos en 2 min 17 s)</td></tr>
+          <tr><td>CI: Azure DevOps</td><td><span class="badge wip">PARCIAL</span></td><td>Pipeline equivalente escrito; aún no se ejecutó en una organización de Azure DevOps</td></tr>
+          <tr><td>Informe de resultados</td><td><span class="badge">LISTO</span></td><td><code>docs/informe-resultados.md</code>: métricas, hallazgos, riesgos y recomendaciones</td></tr>
           <tr><td>Monitoreo con Instana</td><td><span class="badge wip">EQUIVALENTE</span></td><td>Métricas propias (<code>MonitorRecursos</code>) y la guía <code>docs/monitoreo-instana.md</code>; Instana no se puede ejecutar en local</td></tr>
-          <tr><td>Azure Boards</td><td><span class="badge no">NO EXISTE</span></td><td>Pendiente documentar work items y su vínculo con commits y PR</td></tr>
+          <tr><td>Azure Boards y Repos</td><td><span class="badge wip">DOCUMENTADO</span></td><td><code>docs/azure-boards.md</code>: work items, criterios de aceptación, plantilla de Bug, vínculos y políticas de rama; sin una organización real</td></tr>
           <tr><td>k6 o JMeter, Docker, WireMock</td><td><span class="badge no">NO EXISTE</span></td><td>Deseables del aviso; Podman está instalado en este equipo</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="callout">
-      <strong>🧭 Lo que sigue:</strong> documentar Azure Boards y un informe de resultados, agregar un endpoint bancario
-      (transferencias con reglas de negocio) y luego WireMock en contenedor y un script k6 para comparar con Gatling.
+      <strong>🧭 Lo que sigue:</strong> agregar un endpoint bancario (transferencias con reglas de negocio) y luego
+      WireMock en contenedor y un script k6 para comparar con Gatling.
     </div>
   </div>
 </section>
@@ -906,6 +908,16 @@ Start-Process .\target\karate-reports\karate-summary.html</pre>
         <span class="icon">📈</span>
         <h3>docs/monitoreo-instana.md</h3>
         <p>Qué mide cada lado (Gatling y un APM), cómo detectar un cuello de botella y el flujo de trabajo con Instana.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📊</span>
+        <h3>docs/informe-resultados.md</h3>
+        <p>Resultados funcionales, de Postman, de performance y de CI, con hallazgos, riesgos y recomendaciones.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📌</span>
+        <h3>docs/azure-boards.md</h3>
+        <p>Work items con criterios de aceptación ligados a escenarios, plantilla de Bug, vínculo con commits y PR, y políticas de rama de Azure Repos.</p>
       </div>
       <div class="card">
         <span class="icon">🌿</span>
