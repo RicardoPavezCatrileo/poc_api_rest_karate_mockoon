@@ -15,13 +15,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *   .\mvnw.cmd test "-Dkarate.options=--tags @smoke"
  *
  * Los features de common/ llevan @ignore: solo se ejecutan cuando otro los llama.
+ * performance/ no se incluye: esos features los ejecuta Gatling (UsuariosSimulation).
  */
 class ApiTestRunner {
 
+    private static final String[] FEATURES_FUNCIONALES = {
+            "classpath:health",
+            "classpath:usuarios",
+            "classpath:auth",
+            "classpath:errores",
+            "classpath:contratos",
+            "classpath:soap",
+            "classpath:sql",
+    };
+
     @Test
     void ejecutarSuite() {
-        Results results = Runner.path("classpath:")
+        Results results = Runner.path(FEATURES_FUNCIONALES)
                 .outputCucumberJson(true)
+                .outputJunitXml(true)
                 .parallel(1);
         assertEquals(0, results.getFailCount(), results.getErrorMessages());
     }
