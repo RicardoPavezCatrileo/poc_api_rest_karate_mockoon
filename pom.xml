@@ -17,6 +17,15 @@
         <karate.version>1.5.2</karate.version>
         <!-- Valida respuestas contra OpenAPI; no es un cliente HTTP (las solicitudes las hace Karate) -->
         <openapi-validator.version>3.0.0</openapi-validator.version>
+        <h2.version>2.5.252</h2.version>
+        <!-- Mismas versiones que karate-parent 1.5.2 usa con karate-gatling (Gatling 3.11.5) -->
+        <gatling-maven-plugin.version>4.3.4</gatling-maven-plugin.version>
+        <!-- Simulación y perfil por defecto de .\mvnw.cmd test-compile gatling:test -->
+        <simulacion>performance.UsuariosSimulation</simulacion>
+        <perfil>carga</perfil>
+        <!-- Gatling corre en otra JVM: estos valores se le pasan explícitamente -->
+        <baseUrl>http://localhost:3001</baseUrl>
+        <karate.env>local</karate.env>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     </properties>
@@ -32,6 +41,19 @@
             <groupId>com.atlassian.oai</groupId>
             <artifactId>openapi-request-validator-core</artifactId>
             <version>${openapi-validator.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Base de datos embebida (modo PostgreSQL) para preparar y validar datos con SQL -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.karatelabs</groupId>
+            <artifactId>karate-gatling</artifactId>
+            <version>${karate.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -66,6 +88,22 @@
                         <include>ApiTestRunner.java</include>
                     </includes>
                     <argLine>-Dfile.encoding=UTF-8</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>${gatling-maven-plugin.version}</version>
+                <configuration>
+                    <simulationClass>${simulacion}</simulationClass>
+                    <jvmArgs>
+                        <jvmArg>-Dfile.encoding=UTF-8</jvmArg>
+                        <jvmArg>-Dperfil=${perfil}</jvmArg>
+                        <jvmArg>-DbaseUrl=${baseUrl}</jvmArg>
+                        <jvmArg>-Dkarate.env=${karate.env}</jvmArg>
+                        <!-- Bajo carga, el log DEBUG de cada solicitud distorsiona los tiempos -->
+                        <jvmArg>-Dkarate.log.level=WARN</jvmArg>
+                    </jvmArgs>
                 </configuration>
             </plugin>
         </plugins>
