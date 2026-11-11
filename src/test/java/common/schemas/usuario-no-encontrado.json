@@ -1,0 +1,5 @@
+{
+  "codigo": 404,
+  "error": "Not Found",
+  "mensaje": "#('El usuario ' + usuarioId + ' no existe.')"
+}

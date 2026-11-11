@@ -1,0 +1,13 @@
+[
+  { "caso": "sin-nombre", "payload": { "email": "diego.rojas@example.com", "rol": "usuario", "activo": true } },
+  { "caso": "nombre-vacio", "payload": { "nombre": "", "email": "diego.rojas@example.com", "rol": "usuario", "activo": true } },
+  { "caso": "nombre-solo-espacios", "payload": { "nombre": "   ", "email": "diego.rojas@example.com", "rol": "usuario", "activo": true } },
+  { "caso": "nombre-nulo", "payload": { "nombre": null, "email": "diego.rojas@example.com", "rol": "usuario", "activo": true } },
+  { "caso": "email-invalido", "payload": { "nombre": "Diego Rojas", "email": "invalido", "rol": "usuario", "activo": true } },
+  { "caso": "sin-rol", "payload": { "nombre": "Diego Rojas", "email": "diego.rojas@example.com", "activo": true } },
+  { "caso": "sin-activo", "payload": { "nombre": "Diego Rojas", "email": "diego.rojas@example.com", "rol": "usuario" } },
+  { "caso": "rol-desconocido", "payload": { "nombre": "Diego Rojas", "email": "diego.rojas@example.com", "rol": "root", "activo": true } },
+  { "caso": "activo-no-booleano", "payload": { "nombre": "Diego Rojas", "email": "diego.rojas@example.com", "rol": "usuario", "activo": "si" } },
+  { "caso": "campo-sensible", "payload": { "nombre": "Diego Rojas", "email": "diego.rojas@example.com", "rol": "usuario", "activo": true, "password": "secreta" } },
+  { "caso": "id-en-el-cuerpo", "payload": { "nombre": "Diego Rojas", "email": "diego.rojas@example.com", "rol": "usuario", "activo": true, "id": 50 } }
+]

@@ -1,0 +1,5 @@
+{
+  "codigo": 422,
+  "error": "Unprocessable Entity",
+  "mensaje": "#regex Datos inválidos: .+"
+}

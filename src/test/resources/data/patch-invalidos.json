@@ -1,0 +1,11 @@
+[
+  { "caso": "cuerpo-vacio", "payload": {} },
+  { "caso": "nombre-vacio", "payload": { "nombre": "" } },
+  { "caso": "nombre-solo-espacios", "payload": { "nombre": "  " } },
+  { "caso": "email-vacio", "payload": { "email": "" } },
+  { "caso": "email-invalido", "payload": { "email": "invalido" } },
+  { "caso": "rol-desconocido", "payload": { "rol": "root" } },
+  { "caso": "activo-no-booleano", "payload": { "activo": "si" } },
+  { "caso": "id-en-el-cuerpo", "payload": { "id": 50 } },
+  { "caso": "campo-sensible", "payload": { "password": "secreta" } }
+]

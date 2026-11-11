@@ -1,0 +1,7 @@
+{
+  "id": "#number",
+  "nombre": "#string",
+  "email": "#regex [^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+  "rol": "#regex (admin|supervisor|usuario)",
+  "activo": "#boolean"
+}

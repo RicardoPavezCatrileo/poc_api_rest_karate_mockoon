@@ -1,0 +1,23 @@
+{
+  "existentes": [1, 2, 3],
+  "siguienteId": 4,
+  "usuario1": {
+    "id": 1,
+    "nombre": "Ana Torres",
+    "email": "ana.torres@example.com",
+    "rol": "admin",
+    "activo": true
+  },
+  "nuevo": {
+    "nombre": "Diego Rojas",
+    "email": "diego.rojas@example.com",
+    "rol": "usuario",
+    "activo": true
+  },
+  "actualizado": {
+    "nombre": "Ana María Torres",
+    "email": "ana.maria@example.com",
+    "rol": "supervisor",
+    "activo": false
+  }
+}

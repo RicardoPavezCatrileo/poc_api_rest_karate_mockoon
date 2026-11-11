@@ -1,0 +1,5 @@
+{
+  "codigo": 400,
+  "error": "Bad Request",
+  "mensaje": "#regex .*objeto JSON.*"
+}

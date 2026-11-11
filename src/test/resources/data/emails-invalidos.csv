@@ -1,0 +1,7 @@
+caso,email
+sin-arroba,sin-arroba.example.com
+sin-dominio,ana@
+sin-usuario,@example.com
+dominio-sin-punto,ana@example
+con-espacio,ana torres@example.com
+vacio,
