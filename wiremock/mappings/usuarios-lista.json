@@ -1,0 +1,15 @@
+{
+  "name": "usuarios-lista",
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "url": "/api/usuarios"
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "status": 200,
+    "bodyFileName": "usuarios.json"
+  }
+}

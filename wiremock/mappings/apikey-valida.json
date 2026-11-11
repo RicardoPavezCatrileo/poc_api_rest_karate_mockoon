@@ -1,0 +1,20 @@
+{
+  "name": "apikey-valida",
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "url": "/api/apikey/usuarios",
+    "headers": {
+      "X-API-Key": {
+        "equalTo": "demo-api-key-123"
+      }
+    }
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "status": 200,
+    "bodyFileName": "usuarios.json"
+  }
+}

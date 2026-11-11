@@ -1,0 +1,7 @@
+{
+  "id": 3,
+  "nombre": "Carla Muñoz",
+  "email": "carla.munoz@example.com",
+  "rol": "usuario",
+  "activo": false
+}

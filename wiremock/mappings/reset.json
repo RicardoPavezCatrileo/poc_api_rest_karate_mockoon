@@ -1,0 +1,17 @@
+{
+  "name": "reset",
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "url": "/api/test/reset"
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "status": 200,
+    "jsonBody": {
+      "status": "restablecido"
+    }
+  }
+}

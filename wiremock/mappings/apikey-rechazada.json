@@ -1,0 +1,19 @@
+{
+  "name": "apikey-rechazada",
+  "priority": 5,
+  "request": {
+    "method": "GET",
+    "url": "/api/apikey/usuarios"
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "status": 401,
+    "jsonBody": {
+      "codigo": 401,
+      "error": "Unauthorized",
+      "mensaje": "API Key ausente, vacía o incorrecta."
+    }
+  }
+}

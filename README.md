@@ -55,6 +55,7 @@ flowchart LR
 .github/pull_request_template.md  Plantilla de pull request
 .vscode/settings.json             Configuración de Visual Studio Code
 azure-pipelines.yml               Pipeline de Azure DevOps, equivalente al workflow
+compose.yaml                      Mockoon y WireMock en contenedores (Docker o Podman)
 arquitectura.html                 Diagrama interactivo, cobertura de requisitos y preguntas de entrevista
 guia_qa_poc_api_rest_karate_mockoon.html   Guía QA de la POC
 docs/branching-strategy.md        Estrategia de ramas
@@ -63,6 +64,7 @@ docs/informe-resultados.md        Informe de resultados: métricas, hallazgos y 
 docs/monitoreo-instana.md         Métricas de TPS, latencia y recursos, y su equivalencia en Instana
 mocks/usuarios-api.json           Entorno de Mockoon: API REST y servicio SOAP
 postman/                          Colección de Postman y entorno local
+wiremock/                         Stubs de WireMock (mappings y __files) para un subconjunto de la API
 scripts/resumen-performance.mjs   Resumen de TPS, latencias, recursos y hallazgos de la última ejecución de Gatling
 src/test/java/
   ApiTestRunner.java              Punto de entrada único de la suite
@@ -111,6 +113,9 @@ Versiones verificadas en Maven Central y GitHub el 2026-11-10.
 | gatling-maven-plugin | Ejecución de la simulación (`gatling:test`) | 4.3.4 |
 | Newman | Ejecución de la colección de Postman | 6.2.3 |
 | GitHub Actions | Integración continua | checkout v7, setup-java v6, setup-node v7, upload-artifact v7 |
+| Imagen `mockoon/cli` | Mockoon en contenedor | 9.10.0 |
+| Imagen `wiremock/wiremock` | Segundo mock, para comparar herramientas | 3.13.2 |
+| Podman | Contenedores en local (también funciona con Docker) | Probado con 5.8.3, máquina WSL |
 | Azure Pipelines | Integración continua equivalente | JavaToolInstaller@1, UseNode@1, Cache@2, PublishTestResults@2, PublishPipelineArtifact@1 |
 
 **Por qué Karate 1.5.2 y no 2.x:** la última versión estable de Karate es 2.1.4, pero solo publica integración con JUnit 6 (`karate-junit6`). `karate-junit5` llega hasta 1.5.2, y el proyecto se definió con JUnit 5.
@@ -511,6 +516,59 @@ Invoke-RestMethod http://localhost:3001/api/health
 Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Get-CimInstance Win32_Process -Filter "ProcessId=$($_.OwningProcess)" } | Select-Object ProcessId, Name, CommandLine | Format-List
 ```
 
+## Contenedores y WireMock
+
+`compose.yaml` levanta dos mocks en contenedores:
+
+| Servicio | Imagen | Puerto | Qué sirve |
+|---|---|---|---|
+| `mockoon` | `mockoon/cli:9.10.0` | 3001 | El mismo `mocks/usuarios-api.json` que usa Mockoon CLI: toda la API |
+| `wiremock` | `wiremock/wiremock:3.13.2` | 8080 | Un subconjunto con stubs propios en `wiremock/`: health, reset, usuarios por id (con 404 por plantilla) y API Key |
+
+Con Docker, o con Podman y un proveedor de compose:
+
+```powershell
+docker compose up -d
+.\mvnw.cmd test
+.\mvnw.cmd test "-DbaseUrl=http://localhost:8080" "-Dkarate.options=classpath:health/health.feature classpath:usuarios/get-usuarios.feature classpath:auth/api-key.feature"
+docker compose down
+```
+
+Con Podman sin proveedor de compose, los comandos equivalentes (fueron los usados en la verificación):
+
+```powershell
+podman machine start
+podman run -d --name poc-mockoon -p 3001:3001 -v "${PWD}\mocks:/data:ro" docker.io/mockoon/cli:9.10.0 --data /data/usuarios-api.json --port 3001 --log-transaction
+podman run -d --name poc-wiremock -p 8080:8080 -v "${PWD}\wiremock:/home/wiremock:ro" docker.io/wiremock/wiremock:3.13.2
+podman rm -f poc-mockoon poc-wiremock
+```
+
+El Mockoon en contenedor usa el puerto 3001, igual que Mockoon CLI o Desktop: solo uno a la vez.
+
+**Resultados del 2026-11-11** (Podman 5.8.3 en Windows 11):
+
+| Mock | Ejecución | Resultado |
+|---|---|---|
+| Mockoon en contenedor | Suite completa | 266 passed; runner en 38,8 s |
+| WireMock en contenedor | `health`, `get-usuarios` y `api-key` | 13 passed; el registro de WireMock (`/__admin/requests`) confirmó las 53 solicitudes |
+
+Los mismos features pasan contra las dos herramientas sin cambiar una línea: solo cambia `baseUrl`. Al pasar varias rutas en `-Dkarate.options`, conviene usar la ruta completa del archivo: con `classpath:health` como primera ruta, ese feature no se ejecutó.
+
+### Mockoon frente a WireMock
+
+Comparación basada en lo implementado en esta POC:
+
+| Aspecto | Mockoon | WireMock |
+|---|---|---|
+| Definición | Un archivo de entorno JSON, editable en Mockoon Desktop | Un archivo JSON por stub (`mappings/`) y cuerpos en `__files/`; también un DSL de Java |
+| Selección de la respuesta | Rutas en orden y reglas por respuesta (cuerpo, cabeceras, esquema JSON, plantillas) | `priority` entre stubs y matchers de la solicitud |
+| Estado | Data buckets que las plantillas leen y modifican (`setData`): CRUD, reset y saldos | Escenarios (máquina de estados); no se usaron aquí |
+| Plantillas | Handlebars con helpers de datos | Handlebars (`response-template`), usado para el 404 y el cuerpo por id |
+| Registro de solicitudes | Pestaña Logs de Desktop o `--log-transaction` | Journal en `/__admin/requests` |
+| Ecosistema | Node.js; app de escritorio y CLI | Java; se puede embeber en pruebas JUnit |
+
+Para esta POC, Mockoon conviene porque las reglas de negocio (CRUD, transferencias) necesitan estado compartido. WireMock es la opción natural en un equipo Java que quiere los stubs junto al código de prueba.
+
 ## Reportes
 
 Todo queda en `target/`, que no se versiona:
@@ -539,6 +597,8 @@ Start-Process .\target\karate-reports\karate-summary.html
 5. Ejecuta la colección de Postman con Newman (reporte JUnit en `target/newman/`).
 6. Ejecuta la carga con Gatling (`gatling:test`, perfil `carga`) y publica el resumen de performance en el resumen del job.
 7. Publica `target/karate-reports/`, `target/karate.log`, `target/gatling/`, `target/gatling-recursos/`, `target/newman/` y `mockoon.log` como artifact `reporte-pruebas`.
+
+Un segundo job, `contenedores`, corre en paralelo: levanta `compose.yaml` con `docker compose`, ejecuta la suite completa contra Mockoon en contenedor y los features de solo lectura contra WireMock, y publica el artifact `reporte-contenedores`.
 
 Los pasos 5 a 7 usan `if: ${{ !cancelled() }}` o `always()`: corren aunque Karate falle, y el job igual termina en rojo. No necesita Mockoon Desktop ni secretos. El artifact contiene las credenciales ficticias de laboratorio.
 
@@ -647,5 +707,4 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 - Aislar los datos para ejecutar en paralelo.
 - Monitorear el servicio con un APM real (Instana) y comparar sus métricas con las de Gatling (ver [docs/monitoreo-instana.md](docs/monitoreo-instana.md)).
 - Agregar un endpoint de transferencias con reglas de negocio bancarias (saldo insuficiente, cuenta bloqueada).
-- Levantar el mock en un contenedor y comparar con WireMock.
 - Un script de k6 equivalente a la carga de Gatling, para comparar resultados.

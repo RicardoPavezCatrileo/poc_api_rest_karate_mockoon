@@ -23,6 +23,8 @@ npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log
 .\mvnw.cmd test "-DbaseUrl=http://localhost:3002"
 .\mvnw.cmd test-compile gatling:test "-Dperfil=carga"   # O estres; reporte en target/gatling
 node scripts\resumen-performance.mjs                     # TPS, latencias, recursos y hallazgos de la última ejecución
+docker compose up -d                                     # Mockoon (3001) y WireMock (8080) en contenedores; con Podman, ver README "Contenedores"
+.\mvnw.cmd test "-DbaseUrl=http://localhost:8080" "-Dkarate.options=classpath:health/health.feature classpath:usuarios/get-usuarios.feature classpath:auth/api-key.feature"   # Contra WireMock
 npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json
 ```
 
@@ -70,6 +72,7 @@ En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HT
 
 - Las rutas se evalúan en orden: `lento`, `999` y DELETE van antes de la ruta CRUD `api/usuarios`.
 - Banca: `POST /api/transferencias` tiene una respuesta por regla, en orden (401, 403, 400, 422 esquema, 422 decimales, 422 misma cuenta, 404 origen, 404 destino, 422 origen no activa, 422 destino no activa, 422 saldo) y la 201 por defecto. Las reglas de negocio son reglas `templating` con `#each (dataRaw 'cuentas')` y regex `^si$` o `^existe$`. Las cuentas del data bucket `cuentas` deben coincidir con `sql/datos.sql` y con `data/cuentas.json`; el reset restaura `cuentas` desde `cuentas-iniciales` y vacía `transferencias`.
+- WireMock (`wiremock/`) replica solo lo que usan `health`, `get-usuarios` y `api-key` (sus datos salen del data bucket `usuarios-iniciales`). Si cambian esas rutas o esos features, actualizar también los stubs. Al pasar varias rutas en `-Dkarate.options`, usar rutas de archivo: con `classpath:health` como primera ruta, ese feature no se ejecutó.
 - Plantillas de Mockoon: `setVar` dentro de un `#each` solo vale para esa iteración, así que la 201 vuelve a recorrer las cuentas para mostrar los saldos. El helper `float` genera números aleatorios (faker), no convierte; para redondear a centavos se usa `divide (round (multiply x 100)) 100`. `eq` compara con `===`.
 - DELETE responde 204 sin cuerpo ni `Content-Type`.
 - `/api/usuarios/lento` tarda 15 s (`latency` y `retardo_ms` en el mock); debe coincidir con `timeouts.slowDelayMs` de `karate-config.js`.

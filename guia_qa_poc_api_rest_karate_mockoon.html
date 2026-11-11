@@ -796,6 +796,7 @@
           <tr><td><code>.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"</code></td><td>Carga con SLA (o <code>estres</code>)</td><td>Pruebas de rendimiento (40 s o 60 s)</td></tr>
           <tr><td><code>node scripts\resumen-performance.mjs</code></td><td>TPS, latencias, recursos y hallazgos</td><td>Después de una corrida de Gatling</td></tr>
           <tr><td><code>npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json</code></td><td>La colección de Postman</td><td>Verificar la colección o mostrarla en una demo</td></tr>
+          <tr><td><code>docker compose up -d</code></td><td>Mockoon (3001) y WireMock (8080) en contenedores</td><td>Probar sin instalar Mockoon, o comparar con WireMock (<code>-DbaseUrl=http://localhost:8080</code>)</td></tr>
           <tr><td><code>curl.exe "http://localhost:3001/soap/usuarios?wsdl"</code></td><td>Una solicitud a mano</td><td>Reproducir un fallo fuera de la suite</td></tr>
           <tr><td><code>Start-Process .\target\karate-reports\karate-summary.html</code></td><td>Abre el reporte</td><td>Después de cada corrida</td></tr>
         </tbody>
@@ -876,14 +877,15 @@ Start-Process .\target\karate-reports\karate-summary.html</pre>
           <tr><td>Informe de resultados</td><td><span class="badge">LISTO</span></td><td><code>docs/informe-resultados.md</code>: métricas, hallazgos, riesgos y recomendaciones</td></tr>
           <tr><td>Monitoreo con Instana</td><td><span class="badge wip">EQUIVALENTE</span></td><td>Métricas propias (<code>MonitorRecursos</code>) y la guía <code>docs/monitoreo-instana.md</code>; Instana no se puede ejecutar en local</td></tr>
           <tr><td>Azure Boards y Repos</td><td><span class="badge wip">DOCUMENTADO</span></td><td><code>docs/azure-boards.md</code>: work items, criterios de aceptación, plantilla de Bug, vínculos y políticas de rama; sin una organización real</td></tr>
-          <tr><td>k6 o JMeter, Docker, WireMock</td><td><span class="badge no">NO EXISTE</span></td><td>Deseables del aviso; Podman está instalado en este equipo</td></tr>
+          <tr><td>Contenedores y WireMock</td><td><span class="badge">LISTO</span></td><td class="n"><code>compose.yaml</code> con Mockoon y WireMock; con Podman 5.8.3: suite completa contra Mockoon en contenedor 266/266 y 3 features contra WireMock 13/13</td></tr>
+          <tr><td>k6 o JMeter</td><td><span class="badge no">NO EXISTE</span></td><td>Deseable del aviso</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="callout">
-      <strong>🧭 Lo que sigue:</strong> agregar un endpoint bancario (transferencias con reglas de negocio) y luego
-      WireMock en contenedor y un script k6 para comparar con Gatling.
+      <strong>🧭 Lo que sigue:</strong> un script k6 equivalente a la carga de Gatling, para comparar herramientas,
+      y ejecutar el pipeline en una organización real de Azure DevOps.
     </div>
   </div>
 </section>

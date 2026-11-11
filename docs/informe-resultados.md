@@ -121,6 +121,19 @@ Ejecución del 2026-11-11, después de agregar cuentas y transferencias (rama `f
 | `transferencias/transferencias.feature` (`@banca`) | 38 de 38: 7 reglas de negocio, 14 datos inválidos, 4 payloads malformados, 401, 403, conservación del dinero, redondeo a centavos, contrato OpenAPI y 3 escenarios de consistencia con SQL |
 | Newman con la carpeta 06 Banca | 17 solicitudes, 55 de 55 aserciones |
 
+## Actualización: contenedores y WireMock
+
+Ejecución del 2026-11-11 con Podman 5.8.3 (rama `feature/contenedores-wiremock`):
+
+| Mock | Ejecución | Resultado |
+|---|---|---|
+| `mockoon/cli:9.10.0` en contenedor | Suite completa | 266 de 266; runner en 38,8 s |
+| `wiremock/wiremock:3.13.2` en contenedor | `health`, `get-usuarios` y `api-key` | 13 de 13; las 53 solicitudes constan en el journal de WireMock |
+
+Los mismos features pasan contra dos herramientas de mocking distintas cambiando solo `baseUrl`.
+
+## Comprobaciones del dominio bancario
+
 Comprobaciones clave: ningún rechazo mueve dinero; tras tres transferencias el total sigue en 4950,50; 0.1 + 0.2 suman exactamente 0.3; y en la base, una transferencia a una cuenta cerrada revierte el descuento ya hecho al origen (rollback).
 
 ## Defectos

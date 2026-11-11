@@ -1,0 +1,33 @@
+# Los mocks de la POC en contenedores.
+#
+#   mockoon:  el mismo entorno que usa Mockoon CLI (mocks/usuarios-api.json), en el puerto 3001.
+#   wiremock: un subconjunto de la API con stubs de WireMock (wiremock/), en el puerto 8080,
+#             para demostrar que los mismos features de Karate funcionan con otra herramienta de mocking.
+#
+# Uso (Docker o Podman; con Podman se necesita un proveedor de compose, o ver los comandos
+# podman run equivalentes en el README, sección Contenedores):
+#   docker compose up -d
+#   .\mvnw.cmd test
+#   .\mvnw.cmd test "-DbaseUrl=http://localhost:8080" "-Dkarate.options=classpath:health/health.feature classpath:usuarios/get-usuarios.feature classpath:auth/api-key.feature"
+#   docker compose down
+#
+# Mockoon en contenedor y Mockoon CLI (o Desktop) no pueden usar el puerto 3001 a la vez.
+
+name: poc-karate-mocks
+
+services:
+  mockoon:
+    image: docker.io/mockoon/cli:9.10.0
+    # La imagen ya ejecuta "mockoon-cli start --disable-log-to-file"; estos argumentos se agregan
+    command: ["--data", "/data/usuarios-api.json", "--port", "3001", "--log-transaction"]
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./mocks:/data:ro
+
+  wiremock:
+    image: docker.io/wiremock/wiremock:3.13.2
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./wiremock:/home/wiremock:ro
