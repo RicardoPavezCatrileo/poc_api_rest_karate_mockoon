@@ -22,6 +22,10 @@
     {
       "key": "esquemaUsuario",
       "value": "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"id\",\"nombre\",\"email\",\"rol\",\"activo\"],\"properties\":{\"id\":{\"type\":\"integer\"},\"nombre\":{\"type\":\"string\"},\"email\":{\"type\":\"string\",\"pattern\":\"^[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+$\"},\"rol\":{\"enum\":[\"admin\",\"supervisor\",\"usuario\"]},\"activo\":{\"type\":\"boolean\"}}}"
+    },
+    {
+      "key": "saldoOrigenAntes",
+      "value": ""
     }
   ],
   "item": [
@@ -428,6 +432,119 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/api/errores/503"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Banca",
+      "item": [
+        {
+          "name": "Saldo de la cuenta de origen (lo guarda)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const cuenta = pm.response.json();",
+                  "pm.test('Cuenta activa', function () { pm.expect(cuenta.estado).to.eql('activa'); });",
+                  "// Encadenamiento: la transferencia siguiente compara contra este saldo",
+                  "pm.collectionVariables.set('saldoOrigenAntes', cuenta.saldo);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/cuentas/10"
+          }
+        },
+        {
+          "name": "Transferencia válida (descuenta el monto exacto)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Monto fijo con centavos, para verificar el redondeo",
+                  "pm.variables.set('monto', 12.34);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "const t = pm.response.json();",
+                  "const antes = Number(pm.collectionVariables.get('saldoOrigenAntes'));",
+                  "const esperado = Math.round((antes - 12.34) * 100) / 100;",
+                  "pm.test('Descuenta el monto de la cuenta de origen', function () { pm.expect(t.saldoOrigen).to.eql(esperado); });",
+                  "pm.test('Estado completada', function () { pm.expect(t.estado).to.eql('completada'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cuentaOrigen\": 10,\n  \"cuentaDestino\": 20,\n  \"monto\": {{monto}}\n}"
+            },
+            "url": "{{baseUrl}}/api/transferencias"
+          }
+        },
+        {
+          "name": "Saldo insuficiente responde 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 422', function () { pm.response.to.have.status(422); });",
+                  "pm.test('Informa el saldo insuficiente', function () { pm.expect(pm.response.json().mensaje).to.include('Saldo insuficiente en la cuenta 20'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cuentaOrigen\": 20,\n  \"cuentaDestino\": 10,\n  \"monto\": 999999\n}"
+            },
+            "url": "{{baseUrl}}/api/transferencias"
           }
         }
       ]

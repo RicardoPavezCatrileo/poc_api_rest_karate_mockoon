@@ -1,5 +1,7 @@
 package soporte;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -80,6 +82,52 @@ public final class BaseDeDatos {
             return null;
         } catch (SQLException e) {
             return e.getSQLState();
+        }
+    }
+
+    /**
+     * Transfiere un monto entre dos cuentas activas en una sola transacción: descuenta del origen, abona al
+     * destino y registra un retiro y un depósito. Si algo falla (cuenta inexistente o no activa, saldo
+     * insuficiente por el CHECK saldo >= 0), hace rollback y nada cambia.
+     *
+     * Devuelve null si se confirmó, o el SQLState del error si se revirtió.
+     */
+    public static String transferir(int origen, int destino, Number monto) {
+        BigDecimal importe = new BigDecimal(monto.toString()).setScale(2, RoundingMode.UNNECESSARY);
+        try (Connection conexion = conectar()) {
+            conexion.setAutoCommit(false);
+            try {
+                actualizarSaldo(conexion, origen, importe.negate());
+                actualizarSaldo(conexion, destino, importe);
+                registrarMovimiento(conexion, origen, "retiro", importe);
+                registrarMovimiento(conexion, destino, "deposito", importe);
+                conexion.commit();
+                return null;
+            } catch (SQLException e) {
+                conexion.rollback();
+                return e.getSQLState();
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
+    private static void actualizarSaldo(Connection conexion, int cuenta, BigDecimal diferencia) throws SQLException {
+        try (PreparedStatement sentencia = preparar(conexion,
+                "UPDATE cuentas SET saldo = saldo + ? WHERE id = ? AND estado = 'activa'", diferencia, cuenta)) {
+            if (sentencia.executeUpdate() != 1) {
+                // 02000: sin datos. La cuenta no existe o no está activa.
+                throw new SQLException("La cuenta " + cuenta + " no existe o no está activa", "02000");
+            }
+        }
+    }
+
+    private static void registrarMovimiento(Connection conexion, int cuenta, String tipo, BigDecimal monto) throws SQLException {
+        try (PreparedStatement sentencia = preparar(conexion,
+                "INSERT INTO movimientos (id, cuenta_id, tipo, monto, fecha) "
+                        + "SELECT COALESCE(MAX(id), 0) + 1, ?, ?, ?, CURRENT_DATE FROM movimientos",
+                cuenta, tipo, monto)) {
+            sentencia.executeUpdate();
         }
     }
 

@@ -53,10 +53,10 @@
       "responses": [
         {
           "uuid": "7d15dc27-449a-5054-9a76-0e8d4620251a",
-          "body": "{{setData 'set' 'usuarios' '' (jsonParse (data 'usuarios-iniciales'))}}{\n  \"status\": \"restablecido\"\n}",
+          "body": "{{setData 'set' 'usuarios' '' (jsonParse (data 'usuarios-iniciales'))}}{{setData 'set' 'cuentas' '' (jsonParse (data 'cuentas-iniciales'))}}{{setData 'set' 'transferencias' '' (jsonParse '[]')}}{\n  \"status\": \"restablecido\"\n}",
           "latency": 0,
           "statusCode": 200,
-          "label": "Restablece los usuarios",
+          "label": "Restablece usuarios, cuentas y transferencias",
           "headers": [
             {
               "key": "Content-Type",
@@ -685,6 +685,638 @@
           "disableTemplating": false,
           "fallbackTo404": false,
           "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "0d789881-2de4-4372-a0a8-868f5fdb190f",
+      "type": "http",
+      "documentation": "Obtiene una cuenta. Requiere token Bearer.",
+      "method": "get",
+      "endpoint": "api/cuentas/:id",
+      "responses": [
+        {
+          "uuid": "928ebb15-d307-4b93-82c3-e23bc3794595",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"Token ausente, incorrecto o con formato inválido.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Token ausente o incorrecto",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "WWW-Authenticate",
+              "value": "Bearer"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "^Bearer (token-demo-12345|token-sin-permisos-67890)$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "162b9f02-3d2e-4195-9215-bb2b4e921f67",
+          "body": "{\n  \"codigo\": 403,\n  \"error\": \"Forbidden\",\n  \"mensaje\": \"El token es válido, pero no tiene permisos sobre este recurso.\"\n}",
+          "latency": 0,
+          "statusCode": 403,
+          "label": "Token sin permisos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer token-sin-permisos-67890",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "e81f7067-07f1-4a16-b7e6-42a68a03f79a",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"La cuenta {{urlParam 'id'}} no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Cuenta inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (parseInt (urlParam 'id')))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "c8dc0a09-e11b-446d-b465-0e584a6f61be",
+          "body": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (parseInt (urlParam 'id')))}}{{{stringify this}}}{{/if}}{{/each}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Cuenta",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "62bfcdc5-b5ba-4ceb-a94d-7426d50cf899",
+      "type": "http",
+      "documentation": "Lista las transferencias desde el último reset. Requiere token Bearer.",
+      "method": "get",
+      "endpoint": "api/transferencias",
+      "responses": [
+        {
+          "uuid": "a875d3bf-31a4-4a4a-820c-d6680fd5df90",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"Token ausente, incorrecto o con formato inválido.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Token ausente o incorrecto",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "WWW-Authenticate",
+              "value": "Bearer"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "^Bearer (token-demo-12345|token-sin-permisos-67890)$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "b2e26e79-b59d-4cac-9594-3ddd7a6d827c",
+          "body": "{\n  \"codigo\": 403,\n  \"error\": \"Forbidden\",\n  \"mensaje\": \"El token es válido, pero no tiene permisos sobre este recurso.\"\n}",
+          "latency": 0,
+          "statusCode": 403,
+          "label": "Token sin permisos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer token-sin-permisos-67890",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "de75d7bd-ad5d-4a76-b8ba-64fee3ae6bf2",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Transferencias",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "trf",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "12099531-a950-4b01-b4de-3f2412f7405f",
+      "type": "http",
+      "documentation": "Transfiere un monto entre dos cuentas. Requiere token Bearer. Las reglas se evalúan en orden: autenticación, formato, esquema, decimales, misma cuenta, existencia, estado de las cuentas y saldo.",
+      "method": "post",
+      "endpoint": "api/transferencias",
+      "responses": [
+        {
+          "uuid": "8be71f2e-7b50-4a37-87fc-2968d69b6244",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"Token ausente, incorrecto o con formato inválido.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Token ausente o incorrecto",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "WWW-Authenticate",
+              "value": "Bearer"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "^Bearer (token-demo-12345|token-sin-permisos-67890)$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "bc71f088-d2a1-4272-9283-d71611aefaee",
+          "body": "{\n  \"codigo\": 403,\n  \"error\": \"Forbidden\",\n  \"mensaje\": \"El token es válido, pero no tiene permisos sobre este recurso.\"\n}",
+          "latency": 0,
+          "statusCode": 403,
+          "label": "Token sin permisos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer token-sin-permisos-67890",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "f65a2765-66c4-4ff7-bf91-eb8815d09609",
+          "body": "{\n  \"codigo\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"El cuerpo de la solicitud no es un objeto JSON válido.\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Payload malformado",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "",
+              "value": "esquema-objeto-json",
+              "invert": true,
+              "operator": "valid_json_schema"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "628397e7-ae44-4565-8862-f6814671e96d",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"Datos inválidos: se requieren cuentaOrigen y cuentaDestino (enteros positivos) y monto (número mayor que 0); no se admiten otros campos.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Datos inválidos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "",
+              "value": "esquema-transferencia",
+              "invert": true,
+              "operator": "valid_json_schema"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "32691dd4-cbfd-47a1-8718-7f306dafa6a9",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"Datos inválidos: el monto admite como máximo 2 decimales.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Monto con más de 2 decimales",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#if (eq (multiply (toFixed (bodyRaw 'monto') 2) 1) (bodyRaw 'monto'))}}valido{{/if}}",
+              "value": "^valido$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "4d666e3a-43d0-48cc-bc2d-98d885d8e105",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"La cuenta de origen y la de destino deben ser distintas.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Misma cuenta",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#if (eq (bodyRaw 'cuentaOrigen') (bodyRaw 'cuentaDestino'))}}si{{/if}}",
+              "value": "^si$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "7c3934b0-33ec-4087-aebb-5fe9b2da8604",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"La cuenta de origen {{bodyRaw 'cuentaOrigen'}} no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Cuenta de origen inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaOrigen'))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "edfc617e-b0d1-49ef-8d54-399d44766368",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"La cuenta de destino {{bodyRaw 'cuentaDestino'}} no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Cuenta de destino inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaDestino'))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "a8822e55-b612-4624-a391-2ec005b8c176",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"La cuenta de origen {{bodyRaw 'cuentaOrigen'}} no está activa.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Cuenta de origen no operativa",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaOrigen'))}}{{#unless (eq this.estado 'activa')}}si{{/unless}}{{/if}}{{/each}}",
+              "value": "^si$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "3d63d781-910d-451e-8563-f540a0856802",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"La cuenta de destino {{bodyRaw 'cuentaDestino'}} no está activa.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Cuenta de destino no operativa",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaDestino'))}}{{#unless (eq this.estado 'activa')}}si{{/unless}}{{/if}}{{/each}}",
+              "value": "^si$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "b92dd57d-4230-4362-86e8-d0c4319cce6d",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"Saldo insuficiente en la cuenta {{bodyRaw 'cuentaOrigen'}}: disponible {{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaOrigen'))}}{{this.saldo}}{{/if}}{{/each}}, solicitado {{bodyRaw 'monto'}}.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Saldo insuficiente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaOrigen'))}}{{#if (lt this.saldo (bodyRaw 'monto'))}}si{{/if}}{{/if}}{{/each}}",
+              "value": "^si$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "48b89a8e-6ae8-4ad6-b754-7cc78d914ea0",
+          "body": "{{setVar 'idTransferencia' (add (len (dataRaw 'transferencias')) 1)}}{{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaOrigen'))}}{{setData 'set' 'cuentas' (concat @index '.saldo') (divide (round (multiply (subtract this.saldo (bodyRaw 'monto')) 100)) 100)}}{{/if}}{{#if (eq this.id (bodyRaw 'cuentaDestino'))}}{{setData 'set' 'cuentas' (concat @index '.saldo') (divide (round (multiply (add this.saldo (bodyRaw 'monto')) 100)) 100)}}{{/if}}{{/each}}{{setData 'push' 'transferencias' '' (object id=(getVar 'idTransferencia') cuentaOrigen=(bodyRaw 'cuentaOrigen') cuentaDestino=(bodyRaw 'cuentaDestino') monto=(bodyRaw 'monto') estado='completada')}}{\n  \"id\": {{getVar 'idTransferencia'}},\n  \"cuentaOrigen\": {{bodyRaw 'cuentaOrigen'}},\n  \"cuentaDestino\": {{bodyRaw 'cuentaDestino'}},\n  \"monto\": {{bodyRaw 'monto'}},\n  \"estado\": \"completada\",\n  \"saldoOrigen\": {{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaOrigen'))}}{{this.saldo}}{{/if}}{{/each}},\n  \"saldoDestino\": {{#each (dataRaw 'cuentas')}}{{#if (eq this.id (bodyRaw 'cuentaDestino'))}}{{this.saldo}}{{/if}}{{/each}}\n}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Transferencia realizada",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
           "crudKey": "id",
           "callbacks": []
         }
@@ -1359,6 +1991,18 @@
     },
     {
       "type": "route",
+      "uuid": "0d789881-2de4-4372-a0a8-868f5fdb190f"
+    },
+    {
+      "type": "route",
+      "uuid": "62bfcdc5-b5ba-4ceb-a94d-7426d50cf899"
+    },
+    {
+      "type": "route",
+      "uuid": "12099531-a950-4b01-b4de-3f2412f7405f"
+    },
+    {
+      "type": "route",
       "uuid": "2fa5e486-6786-5fa0-a8dc-678064fe6f93"
     },
     {
@@ -1475,6 +2119,34 @@
       "name": "esquema-usuario-parcial",
       "documentation": "Valida PATCH.",
       "value": "{\n  \"type\": \"object\",\n  \"minProperties\": 1,\n  \"properties\": {\n    \"nombre\": {\n      \"type\": \"string\",\n      \"pattern\": \"\\\\S\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"pattern\": \"^[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+$\"\n    },\n    \"rol\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"admin\",\n        \"supervisor\",\n        \"usuario\"\n      ]\n    },\n    \"activo\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"additionalProperties\": false\n}"
+    },
+    {
+      "uuid": "cd4baefe-fd58-47c0-a6f6-4325c2091d77",
+      "id": "ctas",
+      "name": "cuentas",
+      "documentation": "Cuentas bancarias; las transferencias modifican sus saldos.",
+      "value": "[\n  {\n    \"id\": 10,\n    \"usuarioId\": 1,\n    \"tipo\": \"corriente\",\n    \"estado\": \"activa\",\n    \"saldo\": 1500\n  },\n  {\n    \"id\": 11,\n    \"usuarioId\": 1,\n    \"tipo\": \"ahorro\",\n    \"estado\": \"activa\",\n    \"saldo\": 3200.5\n  },\n  {\n    \"id\": 20,\n    \"usuarioId\": 2,\n    \"tipo\": \"corriente\",\n    \"estado\": \"activa\",\n    \"saldo\": 250\n  },\n  {\n    \"id\": 30,\n    \"usuarioId\": 3,\n    \"tipo\": \"ahorro\",\n    \"estado\": \"cerrada\",\n    \"saldo\": 0\n  }\n]"
+    },
+    {
+      "uuid": "1096e75e-2595-4954-b1a1-0ef73cab997a",
+      "id": "ctaseed",
+      "name": "cuentas-iniciales",
+      "documentation": "Copia de las cuentas que restaura POST /api/test/reset.",
+      "value": "[\n  {\n    \"id\": 10,\n    \"usuarioId\": 1,\n    \"tipo\": \"corriente\",\n    \"estado\": \"activa\",\n    \"saldo\": 1500\n  },\n  {\n    \"id\": 11,\n    \"usuarioId\": 1,\n    \"tipo\": \"ahorro\",\n    \"estado\": \"activa\",\n    \"saldo\": 3200.5\n  },\n  {\n    \"id\": 20,\n    \"usuarioId\": 2,\n    \"tipo\": \"corriente\",\n    \"estado\": \"activa\",\n    \"saldo\": 250\n  },\n  {\n    \"id\": 30,\n    \"usuarioId\": 3,\n    \"tipo\": \"ahorro\",\n    \"estado\": \"cerrada\",\n    \"saldo\": 0\n  }\n]"
+    },
+    {
+      "uuid": "e4cf108c-38a5-4c11-a1b4-ecbbc6761806",
+      "id": "trf",
+      "name": "transferencias",
+      "documentation": "Transferencias realizadas desde el último reset.",
+      "value": "[]"
+    },
+    {
+      "uuid": "be49222f-0301-44cb-a617-1a3159321ece",
+      "id": "trfschema",
+      "name": "esquema-transferencia",
+      "documentation": "Valida el cuerpo de POST /api/transferencias.",
+      "value": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"required\": [\n    \"cuentaOrigen\",\n    \"cuentaDestino\",\n    \"monto\"\n  ],\n  \"properties\": {\n    \"cuentaOrigen\": {\n      \"type\": \"integer\",\n      \"minimum\": 1\n    },\n    \"cuentaDestino\": {\n      \"type\": \"integer\",\n      \"minimum\": 1\n    },\n    \"monto\": {\n      \"type\": \"number\",\n      \"exclusiveMinimum\": 0,\n      \"maximum\": 10000000\n    }\n  }\n}"
     }
   ],
   "callbacks": []

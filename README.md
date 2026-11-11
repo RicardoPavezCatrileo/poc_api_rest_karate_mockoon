@@ -161,7 +161,10 @@ El entorno `ci` desactiva el formato legible de solicitudes y respuestas en el l
 | GET | `/api/secure/usuarios` | 200, 401, 403 | Requiere token Bearer |
 | GET | `/api/apikey/usuarios` | 200, 401 | Requiere `X-API-Key` |
 | GET | `/api/errores/{codigo}` | El indicado | 400, 401, 403, 404, 409, 422, 429, 500, 502, 503, 504 y 524 |
-| POST | `/api/test/reset` | 200 | Solo para laboratorio: restablece los usuarios |
+| GET | `/api/cuentas/{id}` | 200, 401, 403, 404 | Requiere token Bearer |
+| POST | `/api/transferencias` | 201, 400, 401, 403, 404, 422 | Requiere token Bearer; reglas de negocio en [Dominio bancario](#dominio-bancario) |
+| GET | `/api/transferencias` | 200, 401, 403 | Historial desde el último reset; requiere token Bearer |
+| POST | `/api/test/reset` | 200 | Solo para laboratorio: restablece usuarios, cuentas y transferencias |
 | POST | `/soap/usuarios` | 200, 500 | Servicio SOAP 1.1: `ObtenerUsuario` y `ListarUsuarios`; los errores son SOAP Fault |
 | GET | `/soap/usuarios?wsdl` | 200 | WSDL del servicio SOAP |
 
@@ -252,7 +255,8 @@ Además, escenarios de control comprueban que cada validador **rechaza** respues
 | `contratos/openapi.feature` | 45 | La especificación es válida; 35 respuestas reales de todos los endpoints cumplen el contrato | El validador rechaza 8 respuestas que no cumplen |
 | `soap/usuarios-soap.feature` | 16 | `ObtenerUsuario`, `ListarUsuarios`, datos compartidos con REST y WSDL publicado | 3 ids inexistentes, usuario eliminado, operación desconocida, XML mal formado y 6 respuestas que no cumplen el XSD |
 | `sql/datos-sql.feature` | 15 | API frente a tabla, preparar datos con JOIN y agregaciones, LEFT JOIN, HAVING, conciliación y usuario creado por la API | Saldo alterado detectado, datos que violan la integridad e intento de inyección SQL |
-| **Total** | **228** | | |
+| `transferencias/transferencias.feature` | 38 | Cuenta, transferencia con historial, conservación del dinero, redondeo a centavos, saldo completo, contrato y consistencia con SQL | 7 reglas de negocio, 14 datos inválidos, 4 malformados, 401, 403 y rollback SQL; cada rechazo comprueba que ningún saldo cambió |
+| **Total** | **266** | | |
 
 Técnicas de Karate usadas:
 
@@ -303,13 +307,14 @@ En PowerShell, cada argumento `-D...` va completo entre comillas dobles.
 
 | Tag | Contenido | Escenarios |
 |---|---|---|
-| `@smoke` | Flujo principal de cada operación | 18 |
-| `@regression` | Suite completa; todo escenario lo lleva | 228 |
-| `@negative` | Entradas inválidas y respuestas de error | 117 |
-| `@security` | Autenticación y autorización | 37 |
-| `@contract` | Estructura, tipos, encabezados, OpenAPI y WSDL/XSD | 71 |
+| `@smoke` | Flujo principal de cada operación | 20 |
+| `@regression` | Suite completa; todo escenario lo lleva | 266 |
+| `@negative` | Entradas inválidas y respuestas de error | 147 |
+| `@security` | Autenticación y autorización | 40 |
+| `@contract` | Estructura, tipos, encabezados, OpenAPI y WSDL/XSD | 72 |
 | `@soap` | Servicio SOAP | 16 |
-| `@sql` | Datos con SQL | 15 |
+| `@sql` | Datos con SQL | 18 |
+| `@banca` | Cuentas y transferencias | 38 |
 | `@timeout` | Timeouts del cliente y del servidor | 5 |
 
 Conteos tomados del reporte de la ejecución completa del 2026-11-11.
@@ -345,6 +350,13 @@ Tras agregar SQL (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3001):
 |---|---|
 | `.\mvnw.cmd test` | 228 passed, 15 features; runner en 42,4 s |
 | `--tags ~@timeout` | 223 passed; runner en 22,5 s |
+
+Tras agregar el dominio bancario (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3001):
+
+| Comando | Resultado |
+|---|---|
+| `.\mvnw.cmd test` | 266 passed, 16 features; runner en 50,2 s |
+| `classpath:transferencias/transferencias.feature` | 38 passed |
 
 ## Datos con SQL
 
@@ -382,6 +394,7 @@ Todas las consultas usan `PreparedStatement` con parámetros `?`. Con `-Ddb.url`
 | 03 CRUD encadenado | Crear (email único y guarda el id), obtener, actualizar, eliminar y comprobar el 404 |
 | 04 SOAP | `ObtenerUsuario` y el SOAP Fault de un usuario inexistente |
 | 05 Errores | 503 con `Retry-After` |
+| 06 Banca | Saldo de la cuenta de origen (lo guarda), transferencia válida que descuenta el monto exacto y saldo insuficiente (422) |
 
 Usa variables de entorno (`postman/local.postman_environment.json`) y de colección, un script previo que genera un email único con `Date.now()`, tests que validan el esquema con `jsonSchema` y guardan valores para encadenar solicitudes, y un test común a toda la colección para el tiempo de respuesta.
 
@@ -389,7 +402,37 @@ Usa variables de entorno (`postman/local.postman_environment.json`) y de colecci
 npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json
 ```
 
-Resultado del 2026-11-11: 14 solicitudes, 45 de 45 aserciones aprobadas, tiempo medio de respuesta de 35 ms.
+Resultado del 2026-11-11: 14 solicitudes y 45 de 45 aserciones aprobadas (tiempo medio de respuesta de 35 ms); con la carpeta 06 Banca, 17 solicitudes y 55 de 55 aserciones.
+
+## Dominio bancario
+
+Cuentas y transferencias con reglas de negocio, para practicar casos del sector financiero. Las cuentas del mock (data bucket `cuentas`) son las mismas de `src/test/resources/sql/datos.sql`:
+
+| Cuenta | Titular | Tipo | Estado | Saldo inicial |
+|---|---|---|---|---:|
+| 10 | Ana Torres | corriente | activa | 1500 |
+| 11 | Ana Torres | ahorro | activa | 3200.50 |
+| 20 | Bruno Díaz | corriente | activa | 250 |
+| 30 | Carla Muñoz | ahorro | cerrada | 0 |
+
+`POST /api/transferencias` recibe `{ "cuentaOrigen": 10, "cuentaDestino": 20, "monto": 125.75 }` y evalúa las reglas en este orden:
+
+| # | Regla | Respuesta |
+|---|---|---|
+| 1 | Token Bearer válido | 401 con `WWW-Authenticate: Bearer` |
+| 2 | Token con permisos | 403 |
+| 3 | Cuerpo JSON válido | 400 |
+| 4 | Esquema: cuentas enteras positivas, monto mayor que 0 y hasta 10.000.000, sin otros campos | 422 |
+| 5 | Monto con máximo 2 decimales | 422 |
+| 6 | Cuentas distintas | 422 |
+| 7 | Cuenta de origen y de destino existentes | 404 |
+| 8 | Cuentas activas | 422 |
+| 9 | Saldo suficiente | 422, con el saldo disponible y el monto solicitado |
+| — | Todo lo anterior se cumple | 201 con los saldos resultantes |
+
+Cada regla es una respuesta propia de la ruta, con reglas `templating` de Mockoon que recorren el data bucket. La respuesta 201 actualiza los dos saldos con `setData` y registra la transferencia en el data bucket `transferencias`. Los saldos se redondean a centavos (`round` sobre el monto × 100), así que 0.1 + 0.2 da exactamente 0.3.
+
+`transferencias/transferencias.feature` prueba todas las reglas y comprueba en cada rechazo que **ningún saldo cambió** y que el historial sigue vacío. También comprueba que el dinero total se conserva tras varias transferencias, el redondeo, el saldo completo como límite y el contrato OpenAPI. Del lado de la base, `BaseDeDatos.transferir` hace la misma transferencia en una transacción JDBC (dos `UPDATE` y dos movimientos). Los escenarios `@sql` comprueban que la API y la base quedan con los mismos saldos y que una transferencia que falla hace rollback completo: el `CHECK (saldo >= 0)` rechaza el saldo insuficiente y una cuenta de destino cerrada revierte el descuento ya hecho al origen.
 
 ## Performance
 

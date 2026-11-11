@@ -1,0 +1,16 @@
+[
+  { "caso": "monto-cero", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": 0 } },
+  { "caso": "monto-negativo", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": -50 } },
+  { "caso": "monto-como-texto", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": "50" } },
+  { "caso": "monto-nulo", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": null } },
+  { "caso": "monto-sobre-el-maximo", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": 10000000.01 } },
+  { "caso": "monto-con-3-decimales", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": 1.005 } },
+  { "caso": "sin-monto", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11 } },
+  { "caso": "sin-cuenta-origen", "payload": { "cuentaDestino": 11, "monto": 50 } },
+  { "caso": "sin-cuenta-destino", "payload": { "cuentaOrigen": 10, "monto": 50 } },
+  { "caso": "cuenta-como-texto", "payload": { "cuentaOrigen": "10", "cuentaDestino": 11, "monto": 50 } },
+  { "caso": "cuenta-decimal", "payload": { "cuentaOrigen": 10.5, "cuentaDestino": 11, "monto": 50 } },
+  { "caso": "cuenta-cero", "payload": { "cuentaOrigen": 0, "cuentaDestino": 11, "monto": 50 } },
+  { "caso": "campo-adicional", "payload": { "cuentaOrigen": 10, "cuentaDestino": 11, "monto": 50, "comision": 1 } },
+  { "caso": "objeto-vacio", "payload": {} }
+]

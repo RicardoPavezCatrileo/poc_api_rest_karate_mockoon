@@ -1,0 +1,44 @@
+[
+  {
+    "caso": "misma-cuenta",
+    "cuentaOrigen": 10, "cuentaDestino": 10, "monto": 1,
+    "codigo": 422, "error": "Unprocessable Entity",
+    "mensaje": "La cuenta de origen y la de destino deben ser distintas."
+  },
+  {
+    "caso": "origen-inexistente",
+    "cuentaOrigen": 99, "cuentaDestino": 10, "monto": 1,
+    "codigo": 404, "error": "Not Found",
+    "mensaje": "La cuenta de origen 99 no existe."
+  },
+  {
+    "caso": "destino-inexistente",
+    "cuentaOrigen": 10, "cuentaDestino": 98, "monto": 1,
+    "codigo": 404, "error": "Not Found",
+    "mensaje": "La cuenta de destino 98 no existe."
+  },
+  {
+    "caso": "origen-cerrada",
+    "cuentaOrigen": 30, "cuentaDestino": 10, "monto": 1,
+    "codigo": 422, "error": "Unprocessable Entity",
+    "mensaje": "La cuenta de origen 30 no está activa."
+  },
+  {
+    "caso": "destino-cerrada",
+    "cuentaOrigen": 10, "cuentaDestino": 30, "monto": 1,
+    "codigo": 422, "error": "Unprocessable Entity",
+    "mensaje": "La cuenta de destino 30 no está activa."
+  },
+  {
+    "caso": "saldo-insuficiente-por-un-centavo",
+    "cuentaOrigen": 20, "cuentaDestino": 10, "monto": 250.01,
+    "codigo": 422, "error": "Unprocessable Entity",
+    "mensaje": "Saldo insuficiente en la cuenta 20: disponible 250, solicitado 250.01."
+  },
+  {
+    "caso": "saldo-insuficiente-monto-alto",
+    "cuentaOrigen": 11, "cuentaDestino": 20, "monto": 10000,
+    "codigo": 422, "error": "Unprocessable Entity",
+    "mensaje": "Saldo insuficiente en la cuenta 11: disponible 3200.5, solicitado 10000."
+  }
+]

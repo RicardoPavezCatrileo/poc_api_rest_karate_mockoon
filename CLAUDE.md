@@ -16,7 +16,7 @@ Requieren Mockoon en marcha, Desktop o CLI, nunca ambos en el mismo puerto.
 npx.cmd @mockoon/cli@9.10.0 validate --data .\mocks\usuarios-api.json
 npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction   # Terminal aparte
 .\mvnw.cmd test
-.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @sql, @timeout
+.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @sql, @banca, @timeout
 .\mvnw.cmd test "-Dkarate.options=--tags ~@timeout"    # Omite las pruebas lentas
 .\mvnw.cmd test "-Dkarate.options=classpath:usuarios/get-usuarios.feature"   # Un solo feature
 .\mvnw.cmd test "-Dkarate.env=ci"
@@ -69,6 +69,8 @@ En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HT
 ## Detalles del mock que no son evidentes
 
 - Las rutas se evalúan en orden: `lento`, `999` y DELETE van antes de la ruta CRUD `api/usuarios`.
+- Banca: `POST /api/transferencias` tiene una respuesta por regla, en orden (401, 403, 400, 422 esquema, 422 decimales, 422 misma cuenta, 404 origen, 404 destino, 422 origen no activa, 422 destino no activa, 422 saldo) y la 201 por defecto. Las reglas de negocio son reglas `templating` con `#each (dataRaw 'cuentas')` y regex `^si$` o `^existe$`. Las cuentas del data bucket `cuentas` deben coincidir con `sql/datos.sql` y con `data/cuentas.json`; el reset restaura `cuentas` desde `cuentas-iniciales` y vacía `transferencias`.
+- Plantillas de Mockoon: `setVar` dentro de un `#each` solo vale para esa iteración, así que la 201 vuelve a recorrer las cuentas para mostrar los saldos. El helper `float` genera números aleatorios (faker), no convierte; para redondear a centavos se usa `divide (round (multiply x 100)) 100`. `eq` compara con `===`.
 - DELETE responde 204 sin cuerpo ni `Content-Type`.
 - `/api/usuarios/lento` tarda 15 s (`latency` y `retardo_ms` en el mock); debe coincidir con `timeouts.slowDelayMs` de `karate-config.js`.
 - 401 incluye `WWW-Authenticate: Bearer`; 403 es token válido sin permisos (`qa_sin_permisos`). Los tokens son cadenas fijas, no JWT.

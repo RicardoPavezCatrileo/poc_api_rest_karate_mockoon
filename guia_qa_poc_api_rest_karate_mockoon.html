@@ -364,8 +364,8 @@
         <!-- Capa 2: casos y datos -->
         <rect x="20" y="106" width="410" height="92" rx="10" fill="#e0f0e7" stroke="#2a9d6a" stroke-width="2"/>
         <text x="40" y="134" font-size="14" font-weight="700" fill="#0d5d3a" font-family="Inter,sans-serif">📋 Features</text>
-        <text x="40" y="155" font-size="12.5" fill="#2c3530" font-family="Inter,sans-serif">health · usuarios · auth · errores · contratos · soap · sql</text>
-        <text x="40" y="174" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">15 features funcionales · todos con @regression</text>
+        <text x="40" y="155" font-size="12.5" fill="#2c3530" font-family="Inter,sans-serif">health · usuarios · auth · errores · contratos · soap · sql · transferencias</text>
+        <text x="40" y="174" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">16 features funcionales · todos con @regression</text>
         <text x="40" y="190" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">performance/: 4 features que solo usa Gatling</text>
 
         <rect x="450" y="106" width="410" height="92" rx="10" fill="#f7efde" stroke="#c9a86a" stroke-width="2"/>
@@ -426,7 +426,7 @@
 <section id="cobertura">
   <div class="container">
     <span class="kicker">04 · La cobertura</span>
-    <h2>15 features, 228 escenarios</h2>
+    <h2>16 features, 266 escenarios</h2>
     <p class="lead">Los escenarios ejecutados incluyen las filas de cada <code>Scenario Outline</code>. Los tags agrupan por
       tipo; <code>@smoke</code> marca el camino crítico y todos llevan <code>@regression</code>.</p>
 
@@ -441,6 +441,7 @@
           <tr><td><code>contratos/</code></td><td>contracts · openapi</td><td>Estructura, tipos, cabeceras y tiempo de respuesta; cada respuesta contra <code>openapi.yaml</code></td><td><code>@contract</code></td></tr>
           <tr><td><code>soap/</code></td><td>usuarios-soap</td><td>ObtenerUsuario y ListarUsuarios, XSD del WSDL, SOAP Fault, el WSDL servido y REST ↔ SOAP</td><td><code>@soap @contract</code></td></tr>
           <tr><td><code>sql/</code></td><td>datos-sql</td><td>API contra tabla, JOIN, LEFT JOIN, agregaciones con HAVING, conciliación, integridad e inyección SQL</td><td><code>@sql</code></td></tr>
+          <tr><td><code>transferencias/</code></td><td>transferencias</td><td>Cuentas y transferencias: 7 reglas de negocio, redondeo a centavos, conservación del dinero, contrato y la misma transferencia en una transacción SQL con rollback</td><td><code>@banca @sql</code></td></tr>
         </tbody>
       </table>
     </div>
@@ -481,6 +482,12 @@
         <h3>📈 Carga y estrés</h3>
         <p>Consultas, login y SOAP como usuarios virtuales en Gatling, con SLA, TPS mínimo y monitoreo de recursos.</p>
         <p class="ex">No los ejecuta <code>ApiTestRunner</code>: van con <code>gatling:test</code>.</p>
+      </div>
+      <div class="test-card data">
+        <span class="badge">@banca</span>
+        <h3>🏦 Transferencias</h3>
+        <p>Saldo insuficiente, cuentas cerradas o inexistentes, máximo 2 decimales y que ningún rechazo mueva dinero.</p>
+        <p class="ex">La misma transferencia se repite en una transacción SQL y los saldos deben coincidir.</p>
       </div>
     </div>
   </div>
@@ -780,7 +787,7 @@
         <tbody>
           <tr><td><code>npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction</code></td><td>Levanta el mock en el puerto 3001</td><td>Antes de cualquier corrida (otra terminal), si no se usa Desktop</td></tr>
           <tr><td><code>npx.cmd @mockoon/cli@9.10.0 validate --data .\mocks\usuarios-api.json</code></td><td>Valida el archivo del mock</td><td>Después de editar el mock</td></tr>
-          <tr><td><code>.\mvnw.cmd test</code></td><td>Suite completa (228 escenarios)</td><td>Regresión antes de un commit (≈45 s)</td></tr>
+          <tr><td><code>.\mvnw.cmd test</code></td><td>Suite completa (266 escenarios)</td><td>Regresión antes de un commit (≈55 s)</td></tr>
           <tr><td><code>.\mvnw.cmd test "-Dkarate.options=--tags @smoke"</code></td><td>Solo el camino crítico</td><td>Verificación rápida</td></tr>
           <tr><td><code>.\mvnw.cmd test "-Dkarate.options=--tags ~@timeout"</code></td><td>Todo menos las pruebas lentas</td><td>Mientras se desarrolla</td></tr>
           <tr><td><code>.\mvnw.cmd test "-Dkarate.options=classpath:usuarios/post-usuarios.feature"</code></td><td>Un solo feature</td><td>Al trabajar sobre un caso puntual</td></tr>
@@ -857,9 +864,9 @@ Start-Process .\target\karate-reports\karate-summary.html</pre>
       <table>
         <thead><tr><th>Capacidad</th><th>Estado</th><th>Detalle</th></tr></thead>
         <tbody>
-          <tr><td>Suite Karate completa</td><td><span class="badge">228/228</span></td><td class="n">15 features; el runner tardó 42,4 s, incluidos los escenarios <code>@timeout</code> de 15 s</td></tr>
-          <tr><td>Suite sin <code>@timeout</code></td><td><span class="badge">223/223</span></td><td class="n">Runner en 22,5 s</td></tr>
-          <tr><td>Postman con Newman</td><td><span class="badge">45/45</span></td><td class="n">14 solicitudes y 45 aserciones, sin fallos; tiempo medio de respuesta 35 ms</td></tr>
+          <tr><td>Suite Karate completa</td><td><span class="badge">266/266</span></td><td class="n">16 features; el runner tardó 50,2 s, incluidos los escenarios <code>@timeout</code> de 15 s</td></tr>
+          <tr><td>Dominio bancario</td><td><span class="badge">38/38</span></td><td class="n">Cuentas, transferencias, reglas de negocio, contrato y consistencia con SQL</td></tr>
+          <tr><td>Postman con Newman</td><td><span class="badge">55/55</span></td><td class="n">17 solicitudes y 55 aserciones, sin fallos, incluida la carpeta 06 Banca</td></tr>
           <tr><td>Gatling, perfil carga</td><td><span class="badge">7/7 SLA</span></td><td class="n">1.950 solicitudes, 48,75 TPS, p95 30 ms, p99 32 ms, 0 errores</td></tr>
           <tr><td>Gatling, perfil estrés</td><td><span class="badge">LISTO</span></td><td class="n">9.570 solicitudes, 162,2 TPS, 0 errores; el CPU del mock crece con cada escalón (hallazgo documentado)</td></tr>
           <tr><td>Contratos OpenAPI y WSDL/XSD</td><td><span class="badge">LISTO</span></td><td>Incluidos en la suite completa (<code>@contract</code>)</td></tr>

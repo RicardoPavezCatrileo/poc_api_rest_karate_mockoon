@@ -160,7 +160,7 @@
     <div class="tw"><table>
       <thead><tr><th>Requisito</th><th>Estado</th><th>Dónde está</th><th>Cómo mostrarlo</th></tr></thead>
       <tbody>
-        <tr><td><strong>Automatización backend en Java con Karate</strong></td><td><span class="estado ok">Cubierto</span></td><td>22 features, <code>ApiTestRunner</code>, <code>karate-config.js</code></td><td><code>.\mvnw.cmd test</code> (228 escenarios en verde el 2026-11-11; sin <code>@timeout</code>, 223)</td></tr>
+        <tr><td><strong>Automatización backend en Java con Karate</strong></td><td><span class="estado ok">Cubierto</span></td><td>25 features (16 funcionales), <code>ApiTestRunner</code>, <code>karate-config.js</code></td><td><code>.\mvnw.cmd test</code> (266 escenarios en verde el 2026-11-11)</td></tr>
         <tr><td><strong>Servicios REST y SOAP</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>usuarios/</code>, <code>auth/</code>, <code>errores/</code>, <code>soap/</code></td><td><code>--tags @soap</code>; el escenario «usuario creado por REST se obtiene por SOAP»</td></tr>
         <tr><td><strong>curl</strong></td><td><span class="estado ok">Cubierto</span></td><td>README, sección Servicio SOAP; health check del pipeline</td><td><code>curl.exe "http://localhost:3001/soap/usuarios?wsdl"</code></td></tr>
         <tr><td><strong>Postman avanzado: colecciones, variables y scripts</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>postman/</code>: 5 carpetas, entorno, scripts previos y de prueba, esquema JSON</td><td><code>npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json</code></td></tr>
@@ -174,7 +174,7 @@
         <tr><td>Deseable: IA para casos, datos y scripts</td><td><span class="estado ok">Cubierto</span></td><td>La POC se construyó con Claude Code; <code>CLAUDE.md</code> guarda las reglas</td><td>Explicar cómo se revisa lo generado: el log muestra lo que se envía de verdad</td></tr>
         <tr><td>Deseable: JMeter o k6</td><td><span class="estado no">Pendiente</span></td><td>—</td><td>—</td></tr>
         <tr><td>Deseable: Docker y WireMock</td><td><span class="estado no">Pendiente</span></td><td>Mockoon cumple el rol de mock; Podman está instalado</td><td>—</td></tr>
-        <tr><td>Deseable: sector bancario o financiero</td><td><span class="estado par">Parcial</span></td><td>Tablas de cuentas y movimientos, conciliación de saldos en SQL</td><td>Escenario «Conciliación: el saldo de cada cuenta coincide…»</td></tr>
+        <tr><td>Deseable: sector bancario o financiero</td><td><span class="estado ok">Cubierto</span></td><td><code>POST /api/transferencias</code> con 7 reglas de negocio, <code>transferencias.feature</code>, transacción SQL con rollback y conciliación de saldos</td><td><code>--tags @banca</code>; mostrar la regla de saldo insuficiente y el rollback SQL</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -256,6 +256,7 @@ Start-Process .\target\karate-reports\karate-summary.html</pre></li>
     <h3 class="sub">SQL y datos</h3>
     <details class="qa"><summary>¿Cómo usas SQL en tus pruebas?</summary><div class="a">Para <strong>preparar</strong> (elegir el dato con una consulta, por ejemplo el usuario activo con mayor saldo, con JOIN, SUM, GROUP BY y LIMIT, y luego consultarlo en la API) y para <strong>validar</strong> (comparar la respuesta de la API con la tabla, conciliar saldos y comprobar la integridad). Siempre con parámetros (<code>?</code>), nunca concatenando.</div></details>
     <details class="qa"><summary>¿Cómo encuentras registros sin relación?</summary><div class="a">Con LEFT JOIN y <code>WHERE c.id IS NULL</code>: en la POC devuelve a Carla Muñoz, la única sin cuentas activas. Si la condición sobre la tabla de la derecha va en el <code>ON</code> y no en el <code>WHERE</code>, el LEFT JOIN no se convierte en INNER JOIN.</div></details>
+    <details class="qa"><summary>¿Cómo probarías una transferencia bancaria?</summary><div class="a">Primero el camino feliz: el monto se descuenta y se abona exacto, y queda registrado. Después cada regla de negocio por separado (saldo insuficiente, cuenta cerrada o inexistente, misma cuenta, monto inválido o con más de 2 decimales), verificando en cada rechazo que <strong>ningún saldo cambió</strong>. Luego invariantes: el dinero total se conserva y los centavos no se pierden (0.1 + 0.2 = 0.3). Y en la base, que la operación sea atómica: si falla el abono, el descuento se revierte. En la POC, <code>BaseDeDatos.transferir</code> lo prueba con una transacción JDBC y rollback.</div></details>
     <h3 class="sub">Performance y monitoreo</h3>
     <details class="qa"><summary>¿Qué diferencia hay entre carga y estrés?</summary><div class="a">Carga: el tráfico esperado, sostenido, contra un SLA (aquí p95 &lt; 500 ms, p99 &lt; 800 ms, errores &lt; 1 %, TPS ≥ 45). Estrés: aumentar por escalones hasta encontrar dónde se degrada. Hay otras, como pico (spike) y resistencia (soak), que no están en la POC.</div></details>
     <details class="qa"><summary>¿Por qué p95 y p99, y no el promedio?</summary><div class="a">El promedio esconde a los usuarios que esperan más. El p95 dice que el 95 % respondió por debajo de ese valor; el p99 muestra la cola, donde aparecen bloqueos, GC o colas. Un p99 muy superior a la mediana es una señal aunque el promedio se vea bien.</div></details>
@@ -341,7 +342,7 @@ const EL=[
  {id:"soapN",k:"nodo",a:2,et:3,x:1034,y:250,w:184,h:50,t:"SOAP /soap/usuarios",s:"WSDL · Fault con HTTP 500",q:"Servicio SOAP 1.1 con ObtenerUsuario y ListarUsuarios; ?wsdl sirve el contrato. Los errores son SOAP Fault con HTTP 500.",p:"Mockoon convierte el XML en un objeto (claves con prefijo y texto en _text) para las reglas; solo entiende los prefijos soapenv y usu.",f:"mocks/usuarios-api.json · ruta soap/usuarios"},
  {id:"bucket",k:"nodo",a:2,et:3,x:1034,y:330,w:184,h:50,t:"Data bucket usuarios",s:"estado compartido · reset",q:"Los usuarios que leen y modifican REST y SOAP. POST /api/test/reset copia usuarios-iniciales sobre usuarios.",p:"Por este estado compartido la suite corre en un hilo: dos escenarios en paralelo se pisarían los datos.",f:"mocks/usuarios-api.json · data buckets"},
  {id:"reglas",k:"nodo",a:2,et:3,x:1034,y:420,w:184,h:50,t:"Reglas y plantillas",s:"rutas en orden · Handlebars",q:"Mockoon evalúa las rutas en orden y elige la respuesta según reglas (cuerpo, cabeceras, parámetros). Las plantillas arman el cuerpo con los datos del bucket.",p:"El orden importa: lento, 999 y DELETE van antes de la ruta CRUD genérica.",f:"mocks/usuarios-api.json"},
- {id:"notaMock",k:"nota",et:3,x:1034,y:500,t:"Desktop: ver cada solicitud|CLI: terminal y CI|Nunca ambos en :3001"},
+ {id:"banca",k:"nodo",a:2,et:3,x:1034,y:490,w:184,h:50,t:"Banca",s:"cuentas · transferencias",q:"GET /api/cuentas/{id} y POST /api/transferencias con 7 reglas de negocio evaluadas en orden: token, permisos, JSON, esquema, 2 decimales, cuentas distintas, existentes y activas, y saldo suficiente. La respuesta 201 actualiza los saldos con setData y registra la transferencia.",p:"Casos del sector financiero: un rechazo nunca debe mover dinero, los centavos se redondean y el total se conserva. Las cuentas son las mismas de sql/datos.sql.",f:"mocks/usuarios-api.json · data buckets cuentas y transferencias · transferencias/transferencias.feature"},
  // Etapa 4 · contratos
  {id:"soporteM",k:"marco",et:4,x:346,y:246,w:420,h:150,t:"soporte/ · Java.type desde los features",q:"Clases Java que los features usan como funciones. No hacen solicitudes: reciben lo que Karate ya obtuvo.",p:"Lo que Karate no trae (OpenAPI, XSD, JDBC) se resuelve en Java y se usa desde el feature con una línea.",f:"src/test/java/soporte/"},
  {id:"oas",k:"nodo",a:3,et:4,x:356,y:272,w:196,h:46,t:"OpenApiContrato",s:"status · headers · cuerpo",q:"Valida una respuesta real (método, ruta, status, cabeceras y bytes) contra openapi.yaml, con openapi-request-validator-core. También valida la especificación misma.",p:"Detecta un status no documentado, un tipo incorrecto, un campo de más o una cabecera requerida ausente, aunque el caso no lo revise.",f:"soporte/OpenApiContrato.java · contratos/openapi.feature"},
@@ -390,6 +391,7 @@ const AR=[
  {id:"e_rest_bucket",f:2,et:3,d:[[1218,65],[1225,65],[1225,355],[1218,355]]},
  {id:"e_soap_bucket",f:2,et:3,d:[[1126,300],[1126,330]],lab:["mismo bucket",1132,319,"start"]},
  {id:"e_reglas_bucket",f:2,et:3,d:[[1126,420],[1126,380]],lab:["plantillas",1132,404,"start"]},
+ {id:"e_banca_reglas",f:2,et:3,d:[[1126,490],[1126,470]]},
  {id:"e_engine_soporte",f:3,et:4,d:[[750,152],[750,246]],lab:["Java.type",744,236,"end"]},
  {id:"e_contracts_oas",f:3,et:4,d:[[298,295],[356,295]]},
  {id:"e_sql_bd",f:3,et:5,d:[[298,355],[356,355]]},
@@ -476,6 +478,15 @@ const FLUJOS=[
    "Newman, Gatling y el resumen de performance corren con condition: succeededOrFailed(): aunque Karate falle, hay información completa.",
    "PublishTestResults@2 lleva los JUnit de Karate y Newman a la pestaña Tests; PublishPipelineArtifact@1 publica reporte-pruebas con los HTML, recursos y logs.",
    "GitHub Actions hace lo mismo con if: !cancelled() y upload-artifact."]},
+ {id:"banca",n:"10 · Transferencia bancaria",ci:"gha",
+  ids:["proy","feat","data","e_data_feat","sql","e_sql_bd","jvm","runner","engine","e_runner_engine","common","e_engine_common","e_engine_mock","mockF","banca","e_banca_reglas","reglas","soporteM","bd","h2","e_bd_h2","e_engine_soporte"],
+  pasos:["transferencias.feature: Background con reset (también restablece cuentas y vacía el historial) y un login con callonce.",
+   "POST /api/transferencias con { cuentaOrigen: 10, cuentaDestino: 20, monto: 125.75 } y el token Bearer.",
+   "Mockoon evalúa las respuestas en orden: 401, 403, 400, 422 por esquema, 422 por más de 2 decimales, 422 por misma cuenta, 404 por cuenta inexistente, 422 por cuenta no activa y 422 por saldo insuficiente. Cada una es una regla templating que recorre el data bucket cuentas.",
+   "Ninguna regla aplica: la respuesta 201 resta y suma con setData, redondeando a centavos (round sobre el monto × 100), y agrega la transferencia al data bucket transferencias.",
+   "El escenario valida el esquema, los saldos devueltos (1374.25 y 375.75), los saldos por GET /api/cuentas/{id} y el historial.",
+   "En los rechazos (Scenario Outline desde data/transferencias-rechazadas.json) valida el código, el mensaje exacto y que ningún saldo cambió.",
+   "@sql: BaseDeDatos.transferir hace la misma transferencia en una transacción JDBC; los saldos de la API y de la base deben coincidir. Con saldo insuficiente, el CHECK (saldo >= 0) falla y el rollback deja todo igual."]},
  {id:"falla",n:"Cuando algo falla",ci:"gha",
   ids:["jvm","maven","runner","engine","e_runner_engine","mockF","rest","out","krep","klog","e_runner_krep","e_engine_klog"],
   pasos:["Un match no se cumple: Karate indica la ruta del JSON (o el XPath) y el valor esperado frente al recibido, y el escenario se detiene en ese paso.",

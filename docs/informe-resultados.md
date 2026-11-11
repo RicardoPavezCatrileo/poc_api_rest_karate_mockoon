@@ -109,6 +109,19 @@ Cinco escalones de 10 s, de 20 a 100 consultas por segundo, con login y SOAP pro
 | H3 | `header X = null` en Karate envía el texto `null`; no omite la cabecera. | `target/karate.log` | Los casos de cabecera ausente se escribieron como escenarios propios. Sin esa verificación habrían pasado probando otra cosa. |
 | H4 | El mock solo entiende los prefijos SOAP `soapenv` y `usu`. | README, sección Servicio SOAP | Un cliente SOAP real con otros prefijos para el mismo namespace fallaría contra el mock. Es una limitación del mock, no del contrato. |
 | H5 | En Windows, la CPU de un proceso se acumula en intervalos de unos 15 ms: una muestra aislada puede marcar 0 % o un pico. | `recursos.csv` | Los hallazgos de recursos se basan en la tendencia, no en muestras sueltas. |
+| H6 | Mientras se construía la transferencia, un error de sintaxis en la plantilla hizo que Mockoon respondiera **201 con un texto de error en el cuerpo y sin mover ningún saldo**. | Prueba manual con curl antes de escribir los escenarios | Una prueba que solo revisara el status habría pasado. Los escenarios de transferencia validan el esquema de la respuesta y los saldos por `GET /api/cuentas/{id}`. |
+
+## Actualización: dominio bancario
+
+Ejecución del 2026-11-11, después de agregar cuentas y transferencias (rama `feature/banca-transferencias`):
+
+| Ámbito | Resultado |
+|---|---|
+| Suite completa | 266 de 266 escenarios aprobados en 16 features; runner en 50,2 s |
+| `transferencias/transferencias.feature` (`@banca`) | 38 de 38: 7 reglas de negocio, 14 datos inválidos, 4 payloads malformados, 401, 403, conservación del dinero, redondeo a centavos, contrato OpenAPI y 3 escenarios de consistencia con SQL |
+| Newman con la carpeta 06 Banca | 17 solicitudes, 55 de 55 aserciones |
+
+Comprobaciones clave: ningún rechazo mueve dinero; tras tres transferencias el total sigue en 4950,50; 0.1 + 0.2 suman exactamente 0.3; y en la base, una transferencia a una cuenta cerrada revierte el descuento ya hecho al origen (rollback).
 
 ## Defectos
 
