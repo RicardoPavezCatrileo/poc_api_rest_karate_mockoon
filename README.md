@@ -40,7 +40,9 @@ flowchart LR
 .github/pull_request_template.md  Plantilla de pull request
 .vscode/settings.json             Configuración de Visual Studio Code
 docs/branching-strategy.md        Estrategia de ramas
+docs/monitoreo-instana.md         Métricas de TPS, latencia y recursos, y su equivalencia en Instana
 mocks/usuarios-api.json           Entorno de Mockoon: API REST y servicio SOAP
+scripts/resumen-performance.mjs   Resumen de TPS, latencias, recursos y hallazgos de la última ejecución de Gatling
 src/test/java/
   ApiTestRunner.java              Punto de entrada único de la suite
   karate-config.js                URL base, timeouts y entornos local y ci
@@ -48,6 +50,7 @@ src/test/java/
   common/                         Features reutilizables (@ignore), esquemas y campos-sensibles.js
   soporte/                        Validadores de contrato en Java: OpenAPI y XSD del WSDL
   health/ usuarios/ auth/ errores/ contratos/ soap/   Features
+  performance/                    Simulación de Gatling, monitor de recursos y features de carga
 src/test/resources/
   contracts/                      openapi.yaml y usuarios.wsdl
   data/                           Datos de prueba en JSON y CSV; data/soap/ con los mensajes XML
@@ -304,6 +307,44 @@ Tras agregar SOAP y OpenAPI (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3002, `
 | `--tags @smoke` | 17 passed |
 | `--tags ~@timeout` | 208 passed |
 
+## Performance
+
+`performance/UsuariosSimulation.java` ejecuta con Gatling (vía `karate-gatling`) los features de `performance/`: consultas REST, login con recurso protegido y `ObtenerUsuario` por SOAP. `ApiTestRunner` no los incluye.
+
+```powershell
+.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"    # 40 s; o "-Dperfil=estres", 60 s
+node scripts\resumen-performance.mjs                      # Resumen en Markdown
+```
+
+| Perfil | Inyección | Aserciones (fallan el build) |
+|---|---|---|
+| `carga` | Rampa de 10 s y 30 s sostenidos: 20 consultas, 5 logins y 5 SOAP por segundo | p95 global < 500 ms, p99 < 800 ms, máximo < 2 s, errores < 1 %, TPS medio ≥ 45, p95 de login y SOAP < 500 ms |
+| `estres` | Cinco escalones de 10 s, de 20 a 100 consultas por segundo, con login y SOAP proporcionales | Errores < 5 %; los tiempos se analizan en el reporte |
+
+El TPS mínimo sale de la inyección: en régimen son 55 solicitudes por segundo (20 × 2 + 5 × 2 + 5 × 1) y, con la rampa, la media de la prueba ronda 48,6.
+
+Mientras corre la simulación, `MonitorRecursos` muestrea cada segundo la CPU y la memoria del host, del inyector y del proceso del mock (que encuentra por el puerto de `baseUrl`). `resumen-performance.mjs` combina esos datos con las estadísticas de Gatling y aplica reglas simples para señalar errores, el endpoint más lento, la latencia de cola y la saturación. Cómo se relaciona esto con Instana está en [docs/monitoreo-instana.md](docs/monitoreo-instana.md).
+
+| Archivo | Contenido |
+|---|---|
+| `target/gatling/<ejecución>/index.html` | Reporte HTML de Gatling |
+| `target/gatling-recursos/recursos.csv` | Una muestra de recursos por segundo |
+| `target/gatling-recursos/resumen.json` | Promedio y máximo de cada recurso |
+| `target/gatling-recursos/resumen-performance.md` | Resumen generado por el script |
+
+### Resultados reales
+
+Ejecuciones del 2026-11-11 en Windows 11 (20 núcleos, 16 GB), Java 21, Mockoon CLI 9.10.0 en el puerto 3001, con el inyector y el mock en la misma máquina.
+
+| Perfil | Solicitudes | KO | TPS medio | p50 | p95 | p99 | Máx | CPU host máx | CPU mock prom / máx | Memoria mock máx |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `carga` | 1.950 | 0 | 48,75 | 20 ms | 31 ms | 32 ms | 36 ms | 20,2 % | 24,3 / 70,4 % | 260,1 MB |
+| `estres` | 9.570 | 0 | 162,2 | 13 ms | 22 ms | 29 ms | 35 ms | 32,2 % | 36,5 / 88,1 % | 283,7 MB |
+
+La CPU del mock se expresa como porcentaje de un núcleo. Las 7 aserciones de `carga` pasaron.
+
+**Hallazgo:** en `estres`, el CPU medio del mock subió con cada escalón (21,5, 24,4, 40,6, 47,6 y 51,0 %, por tramos de 12 s), mientras el host no pasó de 32 %. Las latencias siguieron bajas, pero el hilo de eventos de Node sería el primer recurso en saturarse si la carga siguiera creciendo. En una ejecución anterior, con escalones de 50 a 250 consultas por segundo, el límite fue el inyector: se agotaron los puertos efímeros de Windows (ver el comentario de `UsuariosSimulation.estres()`).
+
 ## Mockoon Desktop
 
 Es la opción recomendada en local, porque permite ver cada solicitud. **No use Desktop y CLI a la vez en el mismo puerto.**
@@ -452,4 +493,4 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 
 - Evaluar la migración a Karate 2.x con JUnit 6.
 - Aislar los datos para ejecutar en paralelo.
-- Pruebas de rendimiento reutilizando los features con Karate Gatling.
+- Monitorear el servicio con un APM real (Instana) y comparar sus métricas con las de Gatling (ver [docs/monitoreo-instana.md](docs/monitoreo-instana.md)).

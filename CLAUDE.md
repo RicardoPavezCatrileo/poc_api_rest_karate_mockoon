@@ -22,6 +22,7 @@ npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log
 .\mvnw.cmd test "-Dkarate.env=ci"
 .\mvnw.cmd test "-DbaseUrl=http://localhost:3002"
 .\mvnw.cmd test-compile gatling:test "-Dperfil=carga"   # O estres; reporte en target/gatling
+node scripts\resumen-performance.mjs                     # TPS, latencias, recursos y hallazgos de la última ejecución
 npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json
 ```
 
@@ -31,6 +32,7 @@ En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HT
 
 - `ApiTestRunner.java` es el único punto de entrada (surefire solo incluye esa clase). Ejecuta una lista explícita de carpetas (`FEATURES_FUNCIONALES`) con `parallel(1)` y falla si hay escenarios fallidos: una carpeta nueva de features debe agregarse a esa lista o no se ejecuta. `-Dkarate.options` sobrescribe tags y rutas del Runner.
 - `performance/` queda fuera del Runner: sus features los ejecuta Gatling desde `performance/UsuariosSimulation.java` (perfiles `carga` y `estres` con `-Dperfil`). Antes de la carga corre `preparar-datos.feature`; los demás solo leen, porque varios usuarios virtuales comparten el mock. Gatling corre en otra JVM: `perfil`, `baseUrl` y `karate.env` se le pasan mediante propiedades del `pom.xml` (`jvmArgs`), y con log `WARN`.
+- `performance/MonitorRecursos` corre en los hooks `before()`/`after()` de la simulación y escribe `target/gatling-recursos/` (CSV por segundo y `resumen.json`). Busca el PID del mock por el puerto de `baseUrl` (`netstat` en Windows, `ss` en Linux) o lo toma de `-DmockPid`. En Windows `ProcessHandle` no expone la línea de comandos ni la memoria de otro proceso: la memoria se lee con `tasklist`. `scripts/resumen-performance.mjs` combina eso con `target/gatling/<lastRun>/js/stats.json` (`percentiles1..4` = p50, p75, p95, p99) y no decide si la prueba pasa; eso lo hacen las aserciones de Gatling. `TPS_MINIMO_CARGA` se deriva de la inyección del perfil `carga`: al cambiar la inyección, recalcularlo. `docs/monitoreo-instana.md` relaciona estas métricas con Instana, que no se puede ejecutar localmente.
 - Un solo hilo es obligatorio: el mock guarda los usuarios en un único data bucket compartido y los escenarios lo restablecen con `POST /api/test/reset`.
 - Los `.feature`, `karate-config.js` y `logback-test.xml` viven en `src/test/java` (el `pom.xml` los copia como recursos de prueba). Los datos de prueba van en `src/test/resources/data`, fuera de los `.feature`.
 - `health/health.feature` no está en la estructura de la especificación: se agregó porque el health check no pertenece a `usuarios/` ni a `contratos/`.

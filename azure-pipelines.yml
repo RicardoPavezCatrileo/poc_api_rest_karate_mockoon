@@ -80,6 +80,11 @@ stages:
             displayName: Ejecutar la prueba de carga con Gatling
             condition: succeededOrFailed()
 
+          # TPS, latencias, aserciones, recursos (MonitorRecursos) y hallazgos en la pestaña Extensions del run
+          - script: node scripts/resumen-performance.mjs
+            displayName: Resumir métricas de performance
+            condition: succeededOrFailed()
+
           # Muestra cada escenario de Karate y cada solicitud de Newman en la pestaña Tests
           - task: PublishTestResults@2
             displayName: Publicar resultados JUnit
@@ -96,6 +101,7 @@ stages:
               mkdir -p "$(Build.ArtifactStagingDirectory)/reportes"
               cp -r target/karate-reports "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
               cp -r target/gatling "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
+              cp -r target/gatling-recursos "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
               cp -r target/newman "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
               cp target/karate.log mockoon.log "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
             displayName: Reunir reportes
