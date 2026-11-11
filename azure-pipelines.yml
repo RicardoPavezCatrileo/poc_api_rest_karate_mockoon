@@ -1,0 +1,109 @@
+# Pipeline de Azure DevOps equivalente a .github/workflows/api-tests.yml.
+# Para usarlo: Azure DevOps > Pipelines > New pipeline > (Azure Repos Git o GitHub) > Existing Azure Pipelines YAML file.
+
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  MOCKOON_CLI_VERSION: "9.10.0"
+  NEWMAN_VERSION: "6.2.3"
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
+  MAVEN_OPTS: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
+
+stages:
+  - stage: Pruebas
+    displayName: Pruebas de API
+    jobs:
+      - job: api_tests
+        displayName: Karate, Newman y Gatling contra Mockoon CLI
+        timeoutInMinutes: 20
+        steps:
+          - checkout: self
+
+          - task: JavaToolInstaller@1
+            displayName: Configurar Java 21
+            inputs:
+              versionSpec: "21"
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - task: UseNode@1
+            displayName: Configurar Node.js
+            inputs:
+              version: "26.x"
+
+          - task: Cache@2
+            displayName: Caché de Maven
+            inputs:
+              key: 'maven | "$(Agent.OS)" | pom.xml'
+              restoreKeys: |
+                maven | "$(Agent.OS)"
+              path: $(MAVEN_CACHE_FOLDER)
+
+          - script: npx --yes "@mockoon/cli@$(MOCKOON_CLI_VERSION)" validate --data mocks/usuarios-api.json
+            displayName: Validar el archivo de Mockoon
+
+          - script: |
+              nohup npx --yes "@mockoon/cli@$(MOCKOON_CLI_VERSION)" start \
+                --data mocks/usuarios-api.json --disable-log-to-file --log-transaction > mockoon.log 2>&1 &
+            displayName: Iniciar Mockoon CLI
+
+          - script: |
+              curl --fail --silent --show-error --output /dev/null \
+                --retry 60 --retry-delay 1 --retry-all-errors \
+                http://localhost:3001/api/health
+            displayName: Esperar a que la API esté disponible
+
+          # Si algún escenario falla, ApiTestRunner falla y el paso termina con error
+          - script: ./mvnw -B test "-Dkarate.env=ci"
+            displayName: Ejecutar las pruebas Karate
+
+          - script: |
+              npx --yes "newman@$(NEWMAN_VERSION)" run postman/usuarios-api.postman_collection.json \
+                -e postman/local.postman_environment.json \
+                -r cli,junit --reporter-junit-export target/newman/newman.xml
+            displayName: Ejecutar la colección de Postman con Newman
+            condition: succeededOrFailed()
+
+          - script: ./mvnw -B test-compile gatling:test "-Dperfil=carga" "-Dkarate.env=ci"
+            displayName: Ejecutar la prueba de carga con Gatling
+            condition: succeededOrFailed()
+
+          # Muestra cada escenario de Karate y cada solicitud de Newman en la pestaña Tests
+          - task: PublishTestResults@2
+            displayName: Publicar resultados JUnit
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: |
+                target/karate-reports/*.xml
+                target/newman/*.xml
+              mergeTestResults: false
+              testRunTitle: API Tests
+
+          - script: |
+              mkdir -p "$(Build.ArtifactStagingDirectory)/reportes"
+              cp -r target/karate-reports "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
+              cp -r target/gatling "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
+              cp -r target/newman "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
+              cp target/karate.log mockoon.log "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
+            displayName: Reunir reportes
+            condition: always()
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publicar reportes
+            condition: always()
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/reportes
+              artifact: reporte-pruebas

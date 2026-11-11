@@ -9,11 +9,12 @@ permissions:
 
 env:
   MOCKOON_CLI_VERSION: "9.10.0"
+  NEWMAN_VERSION: "6.2.3"
 
 jobs:
   api-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Obtener el código
         uses: actions/checkout@v7
@@ -48,6 +49,18 @@ jobs:
       - name: Ejecutar las pruebas Karate
         run: ./mvnw -B test "-Dkarate.env=ci"
 
+      # Los pasos siguientes se ejecutan aunque falle Karate; el job igual termina en rojo
+      - name: Ejecutar la colección de Postman con Newman
+        if: ${{ !cancelled() }}
+        run: >
+          npx --yes "newman@${NEWMAN_VERSION}" run postman/usuarios-api.postman_collection.json
+          -e postman/local.postman_environment.json
+          -r cli,junit --reporter-junit-export target/newman/newman.xml
+
+      - name: Ejecutar la prueba de carga con Gatling
+        if: ${{ !cancelled() }}
+        run: ./mvnw -B test-compile gatling:test "-Dperfil=carga" "-Dkarate.env=ci"
+
       - name: Publicar reportes y log de Mockoon
         if: always()
         uses: actions/upload-artifact@v7
@@ -56,5 +69,7 @@ jobs:
           path: |
             target/karate-reports/
             target/karate.log
+            target/gatling/
+            target/newman/
             mockoon.log
           if-no-files-found: warn
