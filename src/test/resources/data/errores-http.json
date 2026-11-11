@@ -1,0 +1,14 @@
+[
+  { "codigo": 400, "error": "Bad Request", "mensaje": "La solicitud es incorrecta." },
+  { "codigo": 401, "error": "Unauthorized", "mensaje": "Se requiere autenticación." },
+  { "codigo": 403, "error": "Forbidden", "mensaje": "No tiene permisos para acceder a este recurso." },
+  { "codigo": 404, "error": "Not Found", "mensaje": "El recurso solicitado no existe." },
+  { "codigo": 409, "error": "Conflict", "mensaje": "El recurso entra en conflicto con el estado actual." },
+  { "codigo": 422, "error": "Unprocessable Entity", "mensaje": "Los datos enviados no son procesables." },
+  { "codigo": 429, "error": "Too Many Requests", "mensaje": "Se superó el límite de solicitudes." },
+  { "codigo": 500, "error": "Internal Server Error", "mensaje": "Error interno del servidor." },
+  { "codigo": 502, "error": "Bad Gateway", "mensaje": "Respuesta inválida del servidor de origen." },
+  { "codigo": 503, "error": "Service Unavailable", "mensaje": "Servicio temporalmente no disponible." },
+  { "codigo": 504, "error": "Gateway Timeout", "mensaje": "El gateway no recibió respuesta a tiempo." },
+  { "codigo": 524, "error": "A Timeout Occurred", "mensaje": "Respuesta 524 simulada; no reproduce la infraestructura real de Cloudflare." }
+]
