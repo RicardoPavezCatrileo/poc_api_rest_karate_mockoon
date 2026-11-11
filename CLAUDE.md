@@ -16,29 +16,34 @@ Requieren Mockoon en marcha, Desktop o CLI, nunca ambos en el mismo puerto.
 npx.cmd @mockoon/cli@9.10.0 validate --data .\mocks\usuarios-api.json
 npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction   # Terminal aparte
 .\mvnw.cmd test
-.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @timeout
+.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @sql, @timeout
 .\mvnw.cmd test "-Dkarate.options=--tags ~@timeout"    # Omite las pruebas lentas
 .\mvnw.cmd test "-Dkarate.options=classpath:usuarios/get-usuarios.feature"   # Un solo feature
 .\mvnw.cmd test "-Dkarate.env=ci"
 .\mvnw.cmd test "-DbaseUrl=http://localhost:3002"
+.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"   # O estres; reporte en target/gatling
+npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json
 ```
 
 En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HTML: `target/karate-reports/karate-summary.html`; log HTTP: `target/karate.log`.
 
 ## Arquitectura
 
-- `ApiTestRunner.java` es el único punto de entrada (surefire solo incluye esa clase). Ejecuta `classpath:` con `parallel(1)` y falla si hay escenarios fallidos. `-Dkarate.options` sobrescribe tags y rutas del Runner.
+- `ApiTestRunner.java` es el único punto de entrada (surefire solo incluye esa clase). Ejecuta una lista explícita de carpetas (`FEATURES_FUNCIONALES`) con `parallel(1)` y falla si hay escenarios fallidos: una carpeta nueva de features debe agregarse a esa lista o no se ejecuta. `-Dkarate.options` sobrescribe tags y rutas del Runner.
+- `performance/` queda fuera del Runner: sus features los ejecuta Gatling desde `performance/UsuariosSimulation.java` (perfiles `carga` y `estres` con `-Dperfil`). Antes de la carga corre `preparar-datos.feature`; los demás solo leen, porque varios usuarios virtuales comparten el mock. Gatling corre en otra JVM: `perfil`, `baseUrl` y `karate.env` se le pasan mediante propiedades del `pom.xml` (`jvmArgs`), y con log `WARN`.
 - Un solo hilo es obligatorio: el mock guarda los usuarios en un único data bucket compartido y los escenarios lo restablecen con `POST /api/test/reset`.
 - Los `.feature`, `karate-config.js` y `logback-test.xml` viven en `src/test/java` (el `pom.xml` los copia como recursos de prueba). Los datos de prueba van en `src/test/resources/data`, fuera de los `.feature`.
 - `health/health.feature` no está en la estructura de la especificación: se agregó porque el health check no pertenece a `usuarios/` ni a `contratos/`.
 - `common/` contiene features reutilizables (`reset.feature`, `login.feature`) y esquemas (`common/schemas/`). Llevan `@ignore` para que el Runner no los ejecute solos; se invocan con `call` o `callonce`.
 - `soporte/` (Java) valida contratos sin hacer solicitudes: `OpenApiContrato` contra `src/test/resources/contracts/openapi.yaml` (librería `openapi-request-validator-core`) y `XmlContrato` contra el XSD incluido en `contracts/usuarios.wsdl` (APIs XML del JDK). Ambos devuelven una lista de errores; en Karate se usa `match ... == []`. Al cambiar el mock, actualizar también estos contratos.
+- `soporte/BaseDeDatos` da acceso JDBC a un H2 en memoria (modo PostgreSQL) que `sql/datos-sql.feature` recrea en cada escenario desde `src/test/resources/sql` (`schema.sql`, `datos.sql`). Solo `PreparedStatement` con `?`, nunca SQL concatenado. `-Ddb.url`, `-Ddb.usuario` y `-Ddb.clave` apuntan a otra base. Los datos semilla deben coincidir con los usuarios iniciales del mock.
+- CI: `.github/workflows/api-tests.yml` y `azure-pipelines.yml` son equivalentes (validar mock, iniciar Mockoon CLI, Karate, Newman, Gatling, publicar reportes). Un cambio en uno se replica en el otro. `postman/` es una colección independiente ejecutada con Newman; no la usan los features.
 - `karate-config.js` centraliza `baseUrl`, timeouts y `maxResponseTimeMs`. Acepta `karate.env` `local` (por defecto) o `ci`; cualquier otro valor falla.
 
 ## Restricciones
 
 - Karate 1.5.2 con `karate-junit5`, por decisión del usuario: Karate 2.x solo publica `karate-junit6`. No actualizar a 2.x sin consultarlo.
-- Todas las solicitudes HTTP se hacen con Karate. No usar REST Assured, Postman/Newman ni otros clientes.
+- Todas las solicitudes HTTP de las pruebas automatizadas se hacen con Karate. No usar REST Assured ni otros clientes en el código Java ni en los features. La colección de Postman/Newman es un entregable aparte que demuestra ese requisito, no un reemplazo de Karate.
 - Todo escenario lleva `@regression` además de sus tags específicos.
 - El objetivo de la POC es demostrar los requisitos de una oferta de QA Automation backend (REST y SOAP, OpenAPI, SQL, Gatling, CI/CD con Azure DevOps, Git, Postman y curl). `mocks/usuarios-api.json` partió como copia del mock de Playwright, pero puede extenderse libremente para cubrir esos requisitos; solo debe seguir siendo compatible con Mockoon 9.10.0 y validarse con `mockoon-cli validate`. En la comparativa del README, indicar qué casos son exclusivos de esta POC.
 - No usar esperas fijas (`Thread.sleep`, `karate.pause`).
