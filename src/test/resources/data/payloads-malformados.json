@@ -1,0 +1,6 @@
+[
+  { "caso": "json-truncado", "cuerpo": "{\"nombre\": \"Ana\", \"email\": " },
+  { "caso": "coma-final", "cuerpo": "{\"nombre\": \"Ana\",}" },
+  { "caso": "texto-plano", "cuerpo": "esto no es json" },
+  { "caso": "cuerpo-vacio", "cuerpo": "" }
+]
