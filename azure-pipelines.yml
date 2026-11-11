@@ -20,6 +20,7 @@ pool:
 variables:
   MOCKOON_CLI_VERSION: "9.10.0"
   NEWMAN_VERSION: "6.2.3"
+  K6_VERSION: "2.3.0"
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
   MAVEN_OPTS: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
 
@@ -87,6 +88,15 @@ stages:
             displayName: Resumir métricas de performance
             condition: succeededOrFailed()
 
+          # La misma carga con k6, para comparar herramientas; falla si no se cumple un umbral
+          - script: |
+              mkdir -p target/k6 && chmod 777 target/k6
+              docker run --rm --network host -e BASE_URL=http://localhost:3001 \
+                -v "$PWD/performance/k6:/scripts:ro" -v "$PWD/target/k6:/resultados" \
+                "grafana/k6:$(K6_VERSION)" run --quiet /scripts/carga.js
+            displayName: Ejecutar la prueba de carga con k6
+            condition: succeededOrFailed()
+
           # Muestra cada escenario de Karate y cada solicitud de Newman en la pestaña Tests
           - task: PublishTestResults@2
             displayName: Publicar resultados JUnit
@@ -105,6 +115,7 @@ stages:
               cp -r target/gatling "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
               cp -r target/gatling-recursos "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
               cp -r target/newman "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
+              cp -r target/k6 "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
               cp target/karate.log mockoon.log "$(Build.ArtifactStagingDirectory)/reportes/" 2>/dev/null || true
             displayName: Reunir reportes
             condition: always()

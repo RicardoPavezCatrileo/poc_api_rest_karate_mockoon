@@ -132,6 +132,20 @@ Ejecución del 2026-11-11 con Podman 5.8.3 (rama `feature/contenedores-wiremock`
 
 Los mismos features pasan contra dos herramientas de mocking distintas cambiando solo `baseUrl`.
 
+## Actualización: k6
+
+Ejecución del 2026-11-11 con `grafana/k6:2.3.0` contra Mockoon en contenedor (rama `feature/k6`). Gatling se repitió contra el mismo mock:
+
+| Herramienta | Solicitudes | TPS | p95 | p99 | Umbrales |
+|---|---:|---:|---:|---:|---|
+| Gatling | 1.950 | 48,75 | 32 ms | 70 ms | 7 de 7 |
+| k6 | 1.950 | 48,71 | 13 ms | 18 ms | 8 de 8 |
+
+| # | Hallazgo | Evidencia | Impacto |
+|---|---|---|---|
+| H7 | La diferencia de latencia entre Gatling y k6 no viene de reutilizar conexiones: sin keep-alive, k6 pasó de 13 a 14 ms de p95 y abrir la conexión costó en promedio 0,5 ms. | `target/k6/resumen-k6.json` (`http_req_connecting`) | La comparación de latencias entre herramientas exige ejecutarlas desde el mismo lugar; aquí k6 corrió dentro de la máquina de Podman y Gatling en Windows. |
+| H8 | Con el mock en un contenedor de Podman, el proceso que escucha en el puerto del host es el reenvío de puertos: `MonitorRecursos` midió ese proceso y no a Mockoon. | El PID detectado cambió de 19476 (Mockoon CLI) a 28472 | Las columnas del mock no son válidas en ese escenario; se documentó en `docs/monitoreo-instana.md`. |
+
 ## Comprobaciones del dominio bancario
 
 Comprobaciones clave: ningún rechazo mueve dinero; tras tres transferencias el total sigue en 4950,50; 0.1 + 0.2 suman exactamente 0.3; y en la base, una transferencia a una cuenta cerrada revierte el descuento ya hecho al origen (rollback).

@@ -74,6 +74,7 @@ src/test/java/
   soporte/                        Validadores de contrato (OpenAPI, XSD) y acceso JDBC (BaseDeDatos)
   health/ usuarios/ auth/ errores/ contratos/ soap/ sql/   Features
   performance/                    Simulación de Gatling, monitor de recursos y features de carga
+performance/k6/carga.js           La misma carga escrita en k6
 src/test/resources/
   contracts/                      openapi.yaml y usuarios.wsdl
   data/                           Datos de prueba en JSON y CSV; data/soap/ con los mensajes XML
@@ -114,6 +115,7 @@ Versiones verificadas en Maven Central y GitHub el 2026-11-10.
 | Newman | Ejecución de la colección de Postman | 6.2.3 |
 | GitHub Actions | Integración continua | checkout v7, setup-java v6, setup-node v7, upload-artifact v7 |
 | Imagen `mockoon/cli` | Mockoon en contenedor | 9.10.0 |
+| Imagen `grafana/k6` | Carga con k6, para comparar con Gatling | 2.3.0 |
 | Imagen `wiremock/wiremock` | Segundo mock, para comparar herramientas | 3.13.2 |
 | Podman | Contenedores en local (también funciona con Docker) | Probado con 5.8.3, máquina WSL |
 | Azure Pipelines | Integración continua equivalente | JavaToolInstaller@1, UseNode@1, Cache@2, PublishTestResults@2, PublishPipelineArtifact@1 |
@@ -477,6 +479,16 @@ La CPU del mock se expresa como porcentaje de un núcleo. Las 7 aserciones de `c
 
 **Hallazgo:** en `estres`, el CPU medio del mock subió con cada escalón (21,5, 24,4, 40,6, 47,6 y 51,0 %, por tramos de 12 s), mientras el host no pasó de 32 %. Las latencias siguieron bajas, pero el hilo de eventos de Node sería el primer recurso en saturarse si la carga siguiera creciendo. En una ejecución anterior, con escalones de 50 a 250 consultas por segundo, el límite fue el inyector: se agotaron los puertos efímeros de Windows (ver el comentario de `UsuariosSimulation.estres()`).
 
+### k6
+
+`performance/k6/carga.js` reproduce el perfil `carga` en k6 2.3.0: la misma inyección, los mismos nombres de solicitud y los mismos umbrales. Se ejecuta con la imagen `grafana/k6`, sin instalar k6:
+
+```powershell
+podman run --rm -e BASE_URL=http://host.containers.internal:3001 -v "${PWD}\performance\k6:/scripts:ro" -v "${PWD}\target\k6:/resultados" docker.io/grafana/k6:2.3.0 run --quiet /scripts/carga.js
+```
+
+Con el mismo mock (Mockoon en contenedor), el 2026-11-11: Gatling 1.950 solicitudes, 48,75 TPS, p95 32 ms; k6 1.950 solicitudes, 48,71 TPS, p95 13 ms; las dos cumplieron el SLA. La diferencia de latencia no se atribuye a la herramienta: el keep-alive se descartó con una medición y la ruta de red queda como hipótesis. El detalle está en [docs/k6-vs-gatling.md](docs/k6-vs-gatling.md).
+
 ## Mockoon Desktop
 
 Es la opción recomendada en local, porque permite ver cada solicitud. **No use Desktop y CLI a la vez en el mismo puerto.**
@@ -595,7 +607,7 @@ Start-Process .\target\karate-reports\karate-summary.html
 3. Espera a que `/api/health` responda (`curl --retry`).
 4. Ejecuta `./mvnw -B test "-Dkarate.env=ci"`.
 5. Ejecuta la colección de Postman con Newman (reporte JUnit en `target/newman/`).
-6. Ejecuta la carga con Gatling (`gatling:test`, perfil `carga`) y publica el resumen de performance en el resumen del job.
+6. Ejecuta la carga con Gatling (`gatling:test`, perfil `carga`) y publica el resumen de performance en el resumen del job; luego la misma carga con k6 (`grafana/k6`, `--network host`).
 7. Publica `target/karate-reports/`, `target/karate.log`, `target/gatling/`, `target/gatling-recursos/`, `target/newman/` y `mockoon.log` como artifact `reporte-pruebas`.
 
 Un segundo job, `contenedores`, corre en paralelo: levanta `compose.yaml` con `docker compose`, ejecuta la suite completa contra Mockoon en contenedor y los features de solo lectura contra WireMock, y publica el artifact `reporte-contenedores`.
@@ -707,4 +719,3 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 - Aislar los datos para ejecutar en paralelo.
 - Monitorear el servicio con un APM real (Instana) y comparar sus métricas con las de Gatling (ver [docs/monitoreo-instana.md](docs/monitoreo-instana.md)).
 - Agregar un endpoint de transferencias con reglas de negocio bancarias (saldo insuficiente, cuenta bloqueada).
-- Un script de k6 equivalente a la carga de Gatling, para comparar resultados.

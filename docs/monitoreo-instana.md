@@ -50,5 +50,6 @@ Las reglas de `resumen-performance.mjs` siguen el mismo razonamiento que se apli
 
 - El inyector y el mock comparten la máquina: compiten por la CPU, y los tiempos no representan un entorno de producción.
 - En Windows, la CPU de un proceso se acumula en intervalos de unos 15 ms, por lo que una muestra aislada puede marcar 0 % o un pico. Hay que mirar la tendencia en `recursos.csv`, no una muestra suelta.
+- Si el mock corre en un contenedor de Podman o Docker Desktop, el proceso que escucha en el puerto del host es el reenvío de puertos, no Mockoon: las columnas del mock miden ese proceso. Para medir el mock hay que pasar `-DmockPid` del proceso correcto o monitorear dentro del contenedor (`podman stats`).
 - La memoria del mock se lee con `tasklist` (Windows) o `ps` (Linux) en cada muestra, lo que agrega un proceso por segundo al host.
 - No hay trazas: no se puede saber qué parte de la solicitud consumió el tiempo, que es justamente lo que aporta un APM.

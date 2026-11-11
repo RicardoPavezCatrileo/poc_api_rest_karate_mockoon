@@ -10,6 +10,7 @@ permissions:
 env:
   MOCKOON_CLI_VERSION: "9.10.0"
   NEWMAN_VERSION: "6.2.3"
+  K6_VERSION: "2.3.0"
 
 jobs:
   api-tests:
@@ -66,6 +67,16 @@ jobs:
         if: ${{ !cancelled() }}
         run: node scripts/resumen-performance.mjs
 
+      # La misma carga con k6, para comparar herramientas; falla si no se cumple un umbral
+      - name: Ejecutar la prueba de carga con k6
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p target/k6 && chmod 777 target/k6
+          docker run --rm --network host -e BASE_URL=http://localhost:3001 \
+            -v "$PWD/performance/k6:/scripts:ro" -v "$PWD/target/k6:/resultados" \
+            "grafana/k6:${K6_VERSION}" run --quiet /scripts/carga.js | tee -a "$GITHUB_STEP_SUMMARY"
+          exit "${PIPESTATUS[0]}"
+
       - name: Publicar reportes y log de Mockoon
         if: always()
         uses: actions/upload-artifact@v7
@@ -77,6 +88,7 @@ jobs:
             target/gatling/
             target/gatling-recursos/
             target/newman/
+            target/k6/
             mockoon.log
           if-no-files-found: warn
 
