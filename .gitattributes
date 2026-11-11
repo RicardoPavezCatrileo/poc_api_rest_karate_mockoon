@@ -1,0 +1,9 @@
+* text=auto
+
+# Scripts de shell con LF para que funcionen en Linux (GitHub Actions)
+mvnw text eol=lf
+*.sh text eol=lf
+
+# Scripts de Windows con CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf

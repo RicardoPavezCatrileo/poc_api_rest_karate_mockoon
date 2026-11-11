@@ -1,0 +1,1291 @@
+{
+  "uuid": "90274448-3dfc-5ef4-9148-3d910e2bd5d3",
+  "lastMigration": 33,
+  "name": "Usuarios API",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3001,
+  "hostname": "",
+  "folders": [],
+  "routes": [
+    {
+      "uuid": "d63c2407-264c-58c9-9ee7-5071c4145f82",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/health",
+      "responses": [
+        {
+          "uuid": "02b26640-9988-5257-a527-04bfccaea70e",
+          "body": "{\n  \"status\": \"ok\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Servicio disponible",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "71ce393f-32e6-5bb6-afaa-05a49a046108",
+      "type": "http",
+      "documentation": "Solo para laboratorio: copia usuarios-iniciales sobre usuarios.",
+      "method": "post",
+      "endpoint": "api/test/reset",
+      "responses": [
+        {
+          "uuid": "7d15dc27-449a-5054-9a76-0e8d4620251a",
+          "body": "{{setData 'set' 'usuarios' '' (jsonParse (data 'usuarios-iniciales'))}}{\n  \"status\": \"restablecido\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Restablece los usuarios",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "dc1e324e-44d7-50f3-b43b-a92abdfc7209",
+      "type": "http",
+      "documentation": "Credenciales y tokens ficticios de laboratorio; los tokens no son JWT.",
+      "method": "post",
+      "endpoint": "api/auth/login",
+      "responses": [
+        {
+          "uuid": "2cc442c6-4601-5234-a1f5-ff91f11a1955",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"Credenciales incorrectas.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Credenciales incorrectas",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "a646332e-eb43-5be5-8a56-fc0c551cc5be",
+          "body": "{\n  \"access_token\": \"token-demo-12345\",\n  \"token_type\": \"Bearer\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Credenciales de qa_user",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "username",
+              "value": "qa_user",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "demo123",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "b9bc1684-0a70-536c-9bbd-518bb9beea10",
+          "body": "{\n  \"access_token\": \"token-sin-permisos-67890\",\n  \"token_type\": \"Bearer\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Credenciales de qa_sin_permisos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "username",
+              "value": "qa_sin_permisos",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "demo123",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "7acedb0e-1a9c-59af-a8df-6891ca887b11",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/secure/usuarios",
+      "responses": [
+        {
+          "uuid": "c23e0357-d3ae-59e0-8ed4-28523b76834c",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"Token ausente, incorrecto o con formato inválido.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Sin autenticación válida",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "WWW-Authenticate",
+              "value": "Bearer"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "f967b81c-ce65-5306-8e79-e0b3eda798fa",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Token válido con permisos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "usrs",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer token-demo-12345",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "09b47a60-6c1f-59d0-8a1b-d0ce0d109f2c",
+          "body": "{\n  \"codigo\": 403,\n  \"error\": \"Forbidden\",\n  \"mensaje\": \"El token es válido, pero no tiene permisos sobre este recurso.\"\n}",
+          "latency": 0,
+          "statusCode": 403,
+          "label": "Token válido sin permisos",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer token-sin-permisos-67890",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "8d53af6c-c163-5e63-b75f-0810e90623eb",
+      "type": "http",
+      "documentation": "API Key ficticia de laboratorio.",
+      "method": "get",
+      "endpoint": "api/apikey/usuarios",
+      "responses": [
+        {
+          "uuid": "9cbfac47-17a7-51d7-95ee-010e10c79c3f",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"API Key ausente, vacía o incorrecta.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Sin API Key válida",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "2f33d584-0fcb-5fc4-b2df-fa7062e65577",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "API Key válida",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "usrs",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "X-API-Key",
+              "value": "demo-api-key-123",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "1b9dfa02-8f5d-5248-9f55-8f460488992e",
+      "type": "http",
+      "documentation": "Si cambia 'latency', actualice SLOW_ENDPOINT_DELAY_MS.",
+      "method": "get",
+      "endpoint": "api/usuarios/lento",
+      "responses": [
+        {
+          "uuid": "36baa6ca-010a-5430-9ebd-f4e5bec5c96c",
+          "body": "{\n  \"mensaje\": \"Respuesta lenta simulada.\",\n  \"retardo_ms\": 15000\n}",
+          "latency": 15000,
+          "statusCode": 200,
+          "label": "Retardo configurable en 'latency'",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "f387ae03-e875-5ca4-94b2-7f2b029c1d0b",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/usuarios/999",
+      "responses": [
+        {
+          "uuid": "dc37d675-7853-504c-b71b-ac361e91d94b",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El usuario 999 no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Usuario inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "12ac98b0-037b-56b3-a563-9b0d43f521a3",
+      "type": "http",
+      "documentation": "Ruta propia porque el modo CRUD responde 200 al eliminar. Debe ir antes de la ruta CRUD.",
+      "method": "delete",
+      "endpoint": "api/usuarios/:id",
+      "responses": [
+        {
+          "uuid": "e5b44777-28d0-576b-a44b-824bbf1b9ba6",
+          "body": "{{#each (dataRaw 'usuarios')}}{{#if (eq this.id (parseInt (urlParam 'id')))}}{{setData 'del' 'usuarios' @index}}{{/if}}{{/each}}",
+          "latency": 0,
+          "statusCode": 204,
+          "label": "Eliminado del data bucket, sin cuerpo",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "1f895642-b517-562f-969f-e707ed3c7ad6",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El usuario {{urlParam 'id'}} no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Usuario inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'usuarios')}}{{#if (eq this.id (parseInt (urlParam 'id')))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "43d0e253-6602-549b-8a64-3de36de92ef7",
+      "type": "crud",
+      "documentation": "Las rutas estáticas y DELETE deben permanecer antes de esta ruta.",
+      "method": "",
+      "endpoint": "api/usuarios",
+      "responses": [
+        {
+          "uuid": "22e592ce-5b94-5d91-9962-fc2ccac973d5",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Operaciones CRUD sobre el data bucket",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "usrs",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "26f05968-6dea-5e82-8478-878f3487fcf8",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El usuario {{urlParam 'id'}} no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Usuario inexistente",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "params",
+              "modifier": "id",
+              "value": ".+",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "templating",
+              "modifier": "{{#each (dataRaw 'usuarios')}}{{#if (eq this.id (parseInt (urlParam 'id')))}}existe{{/if}}{{/each}}",
+              "value": "^existe$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "bd910658-1097-547c-8a1b-86fb6cb3719d",
+          "body": "{\n  \"codigo\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"El cuerpo de la solicitud no es un objeto JSON válido.\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Payload malformado",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "method",
+              "modifier": "",
+              "value": "^(post|put|patch)$",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "",
+              "value": "esquema-objeto-json",
+              "invert": true,
+              "operator": "valid_json_schema"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "df06311e-6b83-58b5-83c7-3ce6a4e6e7c1",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"Datos inválidos: se requieren nombre, email, rol (admin, supervisor o usuario) y activo; no se admiten otros campos.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "POST o PUT inválido",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "method",
+              "modifier": "",
+              "value": "^(post|put)$",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "",
+              "value": "esquema-usuario-completo",
+              "invert": true,
+              "operator": "valid_json_schema"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "9fd7f951-9ebb-57af-a449-7087c42eb615",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"Datos inválidos: envíe al menos uno de nombre, email, rol o activo, con un valor válido; no se admiten otros campos.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "PATCH inválido",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "method",
+              "modifier": "",
+              "value": "patch",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "",
+              "value": "esquema-usuario-parcial",
+              "invert": true,
+              "operator": "valid_json_schema"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "2fa5e486-6786-5fa0-a8dc-678064fe6f93",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/400",
+      "responses": [
+        {
+          "uuid": "e39616ea-0e03-5cfc-93d7-112cb1852d1c",
+          "body": "{\n  \"codigo\": 400,\n  \"error\": \"Bad Request\",\n  \"mensaje\": \"La solicitud es incorrecta.\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Bad Request",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "1880c58f-fc81-5dc3-bd8e-b7b0337c8ff7",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/401",
+      "responses": [
+        {
+          "uuid": "d71199c8-5350-5898-8ada-1ce94e3f8ee3",
+          "body": "{\n  \"codigo\": 401,\n  \"error\": \"Unauthorized\",\n  \"mensaje\": \"Se requiere autenticación.\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Unauthorized",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "WWW-Authenticate",
+              "value": "Bearer"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "a65dff02-1c68-52a5-b849-0fe821bab5ea",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/403",
+      "responses": [
+        {
+          "uuid": "c989fc80-8a87-5207-b76b-900b9e398811",
+          "body": "{\n  \"codigo\": 403,\n  \"error\": \"Forbidden\",\n  \"mensaje\": \"No tiene permisos para acceder a este recurso.\"\n}",
+          "latency": 0,
+          "statusCode": 403,
+          "label": "Forbidden",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "dc25fbab-6c11-5ded-818f-873b40fbf22b",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/404",
+      "responses": [
+        {
+          "uuid": "4fbbcbc5-ea9e-5398-b07d-b40c4d27a187",
+          "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El recurso solicitado no existe.\"\n}",
+          "latency": 0,
+          "statusCode": 404,
+          "label": "Not Found",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "bc0b8f6d-a24d-5115-9f6d-e921341b5869",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/409",
+      "responses": [
+        {
+          "uuid": "98a499c8-b06b-5ea7-847a-988458853ac5",
+          "body": "{\n  \"codigo\": 409,\n  \"error\": \"Conflict\",\n  \"mensaje\": \"El recurso entra en conflicto con el estado actual.\"\n}",
+          "latency": 0,
+          "statusCode": 409,
+          "label": "Conflict",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "5b25e2cf-38be-5a1b-8020-df10c1aac516",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/422",
+      "responses": [
+        {
+          "uuid": "9fea5e14-2381-5812-8fba-462cd06f1c70",
+          "body": "{\n  \"codigo\": 422,\n  \"error\": \"Unprocessable Entity\",\n  \"mensaje\": \"Los datos enviados no son procesables.\"\n}",
+          "latency": 0,
+          "statusCode": 422,
+          "label": "Unprocessable Entity",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "57fc2cad-64e6-51b3-b1fa-1cd2276915d4",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/429",
+      "responses": [
+        {
+          "uuid": "404d5036-ca27-5182-8eb7-b151e0d3edc5",
+          "body": "{\n  \"codigo\": 429,\n  \"error\": \"Too Many Requests\",\n  \"mensaje\": \"Se superó el límite de solicitudes.\"\n}",
+          "latency": 0,
+          "statusCode": 429,
+          "label": "Too Many Requests",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Retry-After",
+              "value": "60"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "57676f1d-78a8-5e53-ad74-981f1372acac",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/500",
+      "responses": [
+        {
+          "uuid": "11c57af7-b1a0-5b25-839b-96855049e1b5",
+          "body": "{\n  \"codigo\": 500,\n  \"error\": \"Internal Server Error\",\n  \"mensaje\": \"Error interno del servidor.\"\n}",
+          "latency": 0,
+          "statusCode": 500,
+          "label": "Internal Server Error",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "f083c0f0-664f-50ed-ad61-71f5cf9f0aa7",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/502",
+      "responses": [
+        {
+          "uuid": "73485635-438b-5ba9-a420-6735f9d6db7b",
+          "body": "{\n  \"codigo\": 502,\n  \"error\": \"Bad Gateway\",\n  \"mensaje\": \"Respuesta inválida del servidor de origen.\"\n}",
+          "latency": 0,
+          "statusCode": 502,
+          "label": "Bad Gateway",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "dd0d49bf-8e22-5c9e-a601-02f575363c10",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/503",
+      "responses": [
+        {
+          "uuid": "0df71bdb-6247-5ded-ad2f-7e192327810f",
+          "body": "{\n  \"codigo\": 503,\n  \"error\": \"Service Unavailable\",\n  \"mensaje\": \"Servicio temporalmente no disponible.\"\n}",
+          "latency": 0,
+          "statusCode": 503,
+          "label": "Service Unavailable",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Retry-After",
+              "value": "30"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "e4ade537-2812-51b8-bdd1-e415897e8108",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/504",
+      "responses": [
+        {
+          "uuid": "d6ea9a85-e252-5f8b-8a5b-9b51c4e3d1c1",
+          "body": "{\n  \"codigo\": 504,\n  \"error\": \"Gateway Timeout\",\n  \"mensaje\": \"El gateway no recibió respuesta a tiempo.\"\n}",
+          "latency": 0,
+          "statusCode": 504,
+          "label": "Gateway Timeout",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "bbe8a7ab-eeff-5151-a003-3b36444da2fe",
+      "type": "http",
+      "documentation": "",
+      "method": "get",
+      "endpoint": "api/errores/524",
+      "responses": [
+        {
+          "uuid": "ef5284ca-e281-56cd-8a31-aeb82fe87a63",
+          "body": "{\n  \"codigo\": 524,\n  \"error\": \"A Timeout Occurred\",\n  \"mensaje\": \"Respuesta 524 simulada; no reproduce la infraestructura real de Cloudflare.\"\n}",
+          "latency": 0,
+          "statusCode": 524,
+          "label": "A Timeout Occurred",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    }
+  ],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "d63c2407-264c-58c9-9ee7-5071c4145f82"
+    },
+    {
+      "type": "route",
+      "uuid": "71ce393f-32e6-5bb6-afaa-05a49a046108"
+    },
+    {
+      "type": "route",
+      "uuid": "dc1e324e-44d7-50f3-b43b-a92abdfc7209"
+    },
+    {
+      "type": "route",
+      "uuid": "7acedb0e-1a9c-59af-a8df-6891ca887b11"
+    },
+    {
+      "type": "route",
+      "uuid": "8d53af6c-c163-5e63-b75f-0810e90623eb"
+    },
+    {
+      "type": "route",
+      "uuid": "1b9dfa02-8f5d-5248-9f55-8f460488992e"
+    },
+    {
+      "type": "route",
+      "uuid": "f387ae03-e875-5ca4-94b2-7f2b029c1d0b"
+    },
+    {
+      "type": "route",
+      "uuid": "12ac98b0-037b-56b3-a563-9b0d43f521a3"
+    },
+    {
+      "type": "route",
+      "uuid": "43d0e253-6602-549b-8a64-3de36de92ef7"
+    },
+    {
+      "type": "route",
+      "uuid": "2fa5e486-6786-5fa0-a8dc-678064fe6f93"
+    },
+    {
+      "type": "route",
+      "uuid": "1880c58f-fc81-5dc3-bd8e-b7b0337c8ff7"
+    },
+    {
+      "type": "route",
+      "uuid": "a65dff02-1c68-52a5-b849-0fe821bab5ea"
+    },
+    {
+      "type": "route",
+      "uuid": "dc25fbab-6c11-5ded-818f-873b40fbf22b"
+    },
+    {
+      "type": "route",
+      "uuid": "bc0b8f6d-a24d-5115-9f6d-e921341b5869"
+    },
+    {
+      "type": "route",
+      "uuid": "5b25e2cf-38be-5a1b-8020-df10c1aac516"
+    },
+    {
+      "type": "route",
+      "uuid": "57fc2cad-64e6-51b3-b1fa-1cd2276915d4"
+    },
+    {
+      "type": "route",
+      "uuid": "57676f1d-78a8-5e53-ad74-981f1372acac"
+    },
+    {
+      "type": "route",
+      "uuid": "f083c0f0-664f-50ed-ad61-71f5cf9f0aa7"
+    },
+    {
+      "type": "route",
+      "uuid": "dd0d49bf-8e22-5c9e-a601-02f575363c10"
+    },
+    {
+      "type": "route",
+      "uuid": "e4ade537-2812-51b8-bdd1-e415897e8108"
+    },
+    {
+      "type": "route",
+      "uuid": "bbe8a7ab-eeff-5151-a003-3b36444da2fe"
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": false,
+  "headers": [],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [
+    {
+      "uuid": "971128ad-1fec-554c-ac09-f9d5a748e8ce",
+      "id": "usrs",
+      "name": "usuarios",
+      "documentation": "Datos iniciales; los cambios duran hasta reiniciar o restablecer.",
+      "value": "[\n  {\n    \"id\": 1,\n    \"nombre\": \"Ana Torres\",\n    \"email\": \"ana.torres@example.com\",\n    \"rol\": \"admin\",\n    \"activo\": true\n  },\n  {\n    \"id\": 2,\n    \"nombre\": \"Bruno Díaz\",\n    \"email\": \"bruno.diaz@example.com\",\n    \"rol\": \"usuario\",\n    \"activo\": true\n  },\n  {\n    \"id\": 3,\n    \"nombre\": \"Carla Muñoz\",\n    \"email\": \"carla.munoz@example.com\",\n    \"rol\": \"usuario\",\n    \"activo\": false\n  }\n]"
+    },
+    {
+      "uuid": "3499e028-0028-56a1-97c1-829dc910bf2c",
+      "id": "usrseed",
+      "name": "usuarios-iniciales",
+      "documentation": "Copia de referencia para POST /api/test/reset; no se modifica.",
+      "value": "[\n  {\n    \"id\": 1,\n    \"nombre\": \"Ana Torres\",\n    \"email\": \"ana.torres@example.com\",\n    \"rol\": \"admin\",\n    \"activo\": true\n  },\n  {\n    \"id\": 2,\n    \"nombre\": \"Bruno Díaz\",\n    \"email\": \"bruno.diaz@example.com\",\n    \"rol\": \"usuario\",\n    \"activo\": true\n  },\n  {\n    \"id\": 3,\n    \"nombre\": \"Carla Muñoz\",\n    \"email\": \"carla.munoz@example.com\",\n    \"rol\": \"usuario\",\n    \"activo\": false\n  }\n]"
+    },
+    {
+      "uuid": "f23764d2-033d-5cc5-9ff4-2c1167d19373",
+      "id": "objjson",
+      "name": "esquema-objeto-json",
+      "documentation": "Detecta payloads malformados.",
+      "value": "{\n  \"type\": \"object\"\n}"
+    },
+    {
+      "uuid": "3a958920-bc57-5cb1-97a1-12f7c2e04f10",
+      "id": "usrfull",
+      "name": "esquema-usuario-completo",
+      "documentation": "Valida POST y PUT.",
+      "value": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"nombre\",\n    \"email\",\n    \"rol\",\n    \"activo\"\n  ],\n  \"properties\": {\n    \"nombre\": {\n      \"type\": \"string\",\n      \"pattern\": \"\\\\S\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"pattern\": \"^[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+$\"\n    },\n    \"rol\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"admin\",\n        \"supervisor\",\n        \"usuario\"\n      ]\n    },\n    \"activo\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"additionalProperties\": false\n}"
+    },
+    {
+      "uuid": "4bfee2f6-592d-51e6-8bdc-e02b0069751b",
+      "id": "usrpart",
+      "name": "esquema-usuario-parcial",
+      "documentation": "Valida PATCH.",
+      "value": "{\n  \"type\": \"object\",\n  \"minProperties\": 1,\n  \"properties\": {\n    \"nombre\": {\n      \"type\": \"string\",\n      \"pattern\": \"\\\\S\"\n    },\n    \"email\": {\n      \"type\": \"string\",\n      \"pattern\": \"^[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+$\"\n    },\n    \"rol\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"admin\",\n        \"supervisor\",\n        \"usuario\"\n      ]\n    },\n    \"activo\": {\n      \"type\": \"boolean\"\n    }\n  },\n  \"additionalProperties\": false\n}"
+    }
+  ],
+  "callbacks": []
+}

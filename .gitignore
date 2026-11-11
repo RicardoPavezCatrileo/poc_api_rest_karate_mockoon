@@ -1,0 +1,23 @@
+# Maven: compilación y reportes generados (target/karate-reports, target/karate.log)
+target/
+
+# Maven Wrapper: se versionan los scripts y la configuración, no la distribución descargada
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# Visual Studio Code: solo se versiona settings.json
+.vscode/*
+!.vscode/settings.json
+
+# Node y Mockoon CLI
+node_modules/
+*.log
+
+# Archivo local del usuario, no se publica
+prompts.txt
