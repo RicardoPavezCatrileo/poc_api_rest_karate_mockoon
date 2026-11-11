@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura POC Karate</title>
+<style>
+  /* Mismo formato que poc_appium_java_testng_maven/arquitectura.html */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#fafaf7;--surface:#fff;--line:#e3e7e2;--zone:#f1f4f0;--ink:#1a1f1c;--ink-2:#2c3530;--muted:#6b7770;
+    --accent:#f08a3e;--warn:#b85f1c;--green-deep:#0d5d3a;--green-mid:#2a9d6a;--green-soft:#e0f0e7;
+    --naranja-soft:#fdeacf;--naranja-deep:#b85f1c;--rojo-soft:#fbe3e1;--rojo-deep:#a2302a;
+    --a0:#eb6834;--a1:#c98500;--a2:#2a78d6;--a3:#6250d6;--a4:#1baf7a;--a5:#d55181;--a6:#0d9488;
+    --f-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --f-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+    color-scheme:light;
+  }
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.el{transition:none}}
+  body{font-family:var(--f-body);background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px}
+  code{font-family:var(--f-mono);background:var(--green-soft);color:var(--green-deep);padding:1px 6px;border-radius:5px;font-size:.88em;overflow-wrap:anywhere}
+  a{color:var(--green-mid);font-weight:600}
+  a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 24px 48px;display:grid;gap:14px}
+  @media (max-width:480px){.wrap{padding:16px}}
+  .nav{display:flex;flex-wrap:wrap;gap:8px 16px}
+  .nav a{font-size:.9rem;text-decoration:none}
+  header .eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--green-mid);font-weight:600}
+  header h1{font-size:2rem;font-weight:800;letter-spacing:-.6px;color:var(--green-deep);margin:4px 0 6px;text-wrap:balance}
+  header p{color:var(--ink-2);max-width:900px}
+  @media (max-width:600px){header h1{font-size:1.6rem}}
+
+  .pitch{background:var(--naranja-soft);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;color:var(--naranja-deep);font-size:.95rem}
+
+  .barra{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end}
+  .ctl{display:grid;gap:4px}
+  .ctl>label{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .seg{display:flex;flex-wrap:wrap;gap:4px}
+  .seg button,.btn{font:inherit;font-size:.85rem;padding:5px 11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;cursor:pointer}
+  .seg button:hover,.btn:hover{border-color:var(--green-mid)}
+  .seg button[aria-pressed="true"]{background:var(--green-deep);border-color:var(--green-deep);color:#fff}
+  .btn:disabled{opacity:.4;cursor:default}
+  .paso{display:flex;gap:6px}
+  .chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem;color:var(--ink-2);cursor:pointer}
+  [hidden]{display:none!important}
+
+  .leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--muted)}
+  .leyenda span{display:inline-flex;align-items:center;gap:6px}
+  .leyenda i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .leyenda i.l{height:0;border-top:2px solid var(--muted);border-radius:0;width:18px}
+  .leyenda i.l.r{border-top-style:dashed}
+  .leyenda i.l.n{border-top-color:var(--accent)}
+  .leyenda i.l.g{border-top-width:4px;border-top-color:var(--ink)}
+
+  .lienzo{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+  .lienzo svg{display:block;min-width:1080px;width:100%;height:auto}
+  .el{cursor:pointer;transition:opacity .25s}
+  .el:focus{outline:none}
+  .el.oculto{display:none}
+  .el.viejo{opacity:.45}
+  .el.dim{opacity:.13}
+  .marco rect{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+  .marco.solido rect{stroke-dasharray:none}
+  .marco.pc>rect{fill:color-mix(in srgb,var(--a1) 5%,transparent);stroke:var(--a1);stroke-width:1.5}
+  .marco.node>rect{fill:color-mix(in srgb,var(--a5) 5%,transparent);stroke:var(--a5);stroke-width:1.5}
+  .marco.mock>rect{fill:color-mix(in srgb,var(--a2) 6%,transparent);stroke:var(--a2);stroke-width:1.6}
+  .marco.nube>rect{fill:color-mix(in srgb,var(--a6) 5%,transparent);stroke:var(--a6);stroke-width:1.5}
+  .marco.pc>text{fill:var(--a1);font-weight:600}.marco.node>text{fill:var(--a5);font-weight:600}
+  .marco.mock>text{fill:var(--a2);font-weight:600}.marco.nube>text{fill:var(--a6);font-weight:600}
+  .marco text{font-family:var(--f-mono);font-size:11px;fill:var(--muted);letter-spacing:.02em}
+  .nodo rect.caja{fill:var(--surface);stroke:var(--line)}
+  .nodo text.t{font-family:var(--f-body);font-weight:600;font-size:12.5px;fill:var(--ink)}
+  .nodo text.s{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+  .nota text{font-family:var(--f-mono);font-size:10px;fill:var(--muted)}
+  .el.nuevo.nodo rect.caja,.el.nuevo.marco rect{stroke:var(--accent);stroke-width:2.2}
+  .el.sel.nodo rect.caja,.el.sel.marco rect{stroke:var(--ink);stroke-width:2.4;stroke-dasharray:none}
+  .el:focus-visible rect{stroke:var(--accent);stroke-width:2.4}
+  .arista path{fill:none;stroke:var(--muted);stroke-width:1.8}
+  .arista.f0 path{stroke:var(--a0)}.arista.f1 path{stroke:var(--a1)}.arista.f2 path{stroke:var(--a2)}.arista.f3 path{stroke:var(--a3)}
+  .arista.f4 path{stroke:var(--a4)}.arista.f5 path{stroke:var(--a5)}.arista.f6 path{stroke:var(--a6)}
+  .arista.rayas path{stroke-dasharray:6 4}
+  .arista.nuevo path{stroke-width:2.8}
+  .arista.on path{stroke-width:3.4}
+  .et{font-family:var(--f-body);font-size:10.5px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+  .panel h2{font-size:1.25rem;color:var(--green-deep)}
+  .panel .area{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  pre{background:#10241b;color:#dcebe2;padding:10px 12px;border-radius:8px;font-family:var(--f-mono);font-size:12.5px;overflow-x:auto;white-space:pre}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips button{font:inherit;font-size:.85rem;padding:4px 10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:99px;cursor:pointer}
+  .chips button:hover{border-color:var(--accent)}
+  .pasos{padding-left:22px;display:grid;gap:6px}
+
+  /* Secciones de estudio */
+  section{border-top:1px solid var(--line);padding-top:28px;margin-top:18px}
+  section h2{font-size:1.5rem;color:var(--green-deep);margin-bottom:6px}
+  section .lead{color:var(--ink-2);margin-bottom:14px;max-width:880px}
+  section h3.sub{font-size:1.05rem;color:var(--ink);margin:18px 0 8px}
+  .kicker{display:block;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--green-mid);font-weight:600;margin-bottom:4px}
+  .tw{overflow-x:auto;border-radius:10px;border:1px solid var(--line)}
+  table{width:100%;min-width:640px;border-collapse:collapse;background:var(--surface)}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:.92rem;vertical-align:top}
+  th{background:var(--green-soft);color:var(--green-deep);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  .estado{display:inline-block;font-family:var(--f-mono);font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .estado.ok{background:var(--green-soft);color:var(--green-deep)}
+  .estado.par{background:var(--naranja-soft);color:var(--naranja-deep)}
+  .estado.no{background:var(--rojo-soft);color:var(--rojo-deep)}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media (max-width:780px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+  .card h3{font-size:1rem;margin-bottom:4px}
+  .card p{font-size:.92rem;color:var(--ink-2)}
+  ol.demo{padding-left:22px;display:grid;gap:10px;max-width:960px}
+  ol.demo li{color:var(--ink-2)}
+  ol.demo pre{margin-top:6px}
+  details.qa{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin-top:8px}
+  details.qa summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none;display:flex;gap:10px}
+  details.qa summary::-webkit-details-marker{display:none}
+  details.qa summary::before{content:'＋';color:var(--green-mid);font-weight:800}
+  details.qa[open] summary::before{content:'－'}
+  details.qa .a{padding:0 16px 14px 42px;color:var(--ink-2);font-size:.95rem}
+  footer{margin-top:28px;text-align:center;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav"><a href="guia_qa_poc_api_rest_karate_mockoon.html">← Guía QA</a><a href="#cobertura">Cobertura del aviso</a><a href="#demo">Demo en 5 minutos</a><a href="#patrones">Patrones y prácticas</a><a href="#decisiones">Decisiones técnicas</a><a href="#entrevista">Preguntas de entrevista</a><a href="#glosario">Glosario</a></div>
+  <header>
+    <div class="eyebrow">POC Karate + Mockoon · Diagrama de arquitectura</div>
+    <h1>Cómo se comunica todo, etapa por etapa</h1>
+    <p>Desde el <code>.feature</code> hasta el mock, los contratos, la base de datos, la carga y el pipeline. Elige hasta qué etapa vas y el diagrama se arma con lo que aporta cada una.
+      Haz clic en cualquier pieza para ver qué es, por qué está ahí y en qué archivo vive, o elige un recorrido para seguir un flujo completo.</p>
+  </header>
+
+  <div class="pitch"><strong>💬 En 20 segundos:</strong> «Los casos son features de Karate que ejecuta un único runner de JUnit 5 contra un mock de Mockoon:
+    una API REST de usuarios con autenticación y un servicio SOAP. Además del status y el cuerpo, valido los contratos OpenAPI y XSD,
+    preparo y verifico datos con SQL, reutilizo los mismos features como carga en Gatling midiendo TPS, latencia y recursos,
+    y todo corre en pipelines de GitHub Actions y Azure DevOps, junto con una colección de Postman ejecutada con Newman.»</div>
+
+  <div class="barra">
+    <div class="ctl"><label>Construir hasta la etapa</label><div class="seg" id="etapas"></div></div>
+    <div class="ctl"><label>&nbsp;</label><div class="paso"><button type="button" class="btn" id="ant">◀ Anterior</button><button type="button" class="btn" id="sig">Siguiente ▶</button></div></div>
+    <div class="ctl"><label>&nbsp;</label><label class="chk"><input type="checkbox" id="resaltar" checked> Resaltar lo que agrega la etapa</label></div>
+    <div class="ctl" id="ctlCi"><label>Pipeline (etapa 8)</label><div class="seg" id="ci"></div></div>
+  </div>
+  <div class="ctl"><label>Recorrido</label><div class="seg" id="flujos"></div></div>
+  <div class="leyenda" id="leyenda"></div>
+  <div class="lienzo"><svg id="svg" viewBox="0 0 1240 790" role="img" aria-label="Diagrama de arquitectura de la POC Karate: archivos del proyecto, JVM con Karate, validadores de contrato y SQL, Gatling, Newman y curl, el mock de Mockoon, los reportes y el pipeline de CI"></svg></div>
+  <div class="panel" id="panel" aria-live="polite"></div>
+
+  <!-- ═════════════ COBERTURA ═════════════ -->
+  <section id="cobertura">
+    <span class="kicker">Para entrevistas · 1</span>
+    <h2>Requisitos del aviso y dónde están</h2>
+    <p class="lead">Cada requisito del cargo de Automatizador/a QA Senior, con la evidencia en esta POC y el comando para mostrarlo en vivo. Lo parcial y lo pendiente se dice tal cual: en una entrevista es mejor reconocer el límite que exagerar.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Requisito</th><th>Estado</th><th>Dónde está</th><th>Cómo mostrarlo</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Automatización backend en Java con Karate</strong></td><td><span class="estado ok">Cubierto</span></td><td>22 features, <code>ApiTestRunner</code>, <code>karate-config.js</code></td><td><code>.\mvnw.cmd test</code> (228 escenarios en verde el 2026-11-11; sin <code>@timeout</code>, 223)</td></tr>
+        <tr><td><strong>Servicios REST y SOAP</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>usuarios/</code>, <code>auth/</code>, <code>errores/</code>, <code>soap/</code></td><td><code>--tags @soap</code>; el escenario «usuario creado por REST se obtiene por SOAP»</td></tr>
+        <tr><td><strong>curl</strong></td><td><span class="estado ok">Cubierto</span></td><td>README, sección Servicio SOAP; health check del pipeline</td><td><code>curl.exe "http://localhost:3001/soap/usuarios?wsdl"</code></td></tr>
+        <tr><td><strong>Postman avanzado: colecciones, variables y scripts</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>postman/</code>: 5 carpetas, entorno, scripts previos y de prueba, esquema JSON</td><td><code>npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json</code></td></tr>
+        <tr><td><strong>Swagger/OpenAPI y validación JSON/XML</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>contratos/</code>, <code>OpenApiContrato</code>, <code>XmlContrato</code>, <code>contracts/</code></td><td><code>--tags @contract</code></td></tr>
+        <tr><td><strong>SQL con JOIN y agregaciones</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>sql/datos-sql.feature</code>, <code>BaseDeDatos</code>, H2 en modo PostgreSQL</td><td><code>--tags @sql</code>; mostrar el LEFT JOIN y la conciliación de saldos</td></tr>
+        <tr><td><strong>Gatling: carga, estrés y análisis de reportes</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>performance/UsuariosSimulation</code>, aserciones de SLA</td><td><code>.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"</code> y el HTML de <code>target/gatling</code></td></tr>
+        <tr><td><strong>Monitoreo de TPS, latencia y recursos con Instana</strong></td><td><span class="estado par">Equivalente</span></td><td><code>MonitorRecursos</code>, <code>resumen-performance.mjs</code>, <code>docs/monitoreo-instana.md</code></td><td><code>node scripts\resumen-performance.mjs</code>; explicar qué vería en Instana (Instana es comercial y no corre en local)</td></tr>
+        <tr><td><strong>Git: ramas, merge, conflictos y PR</strong></td><td><span class="estado ok">Cubierto</span></td><td><code>docs/branching-strategy.md</code>, ramas <code>feature/*</code>, plantilla de PR</td><td><code>git log --oneline --graph</code></td></tr>
+        <tr><td><strong>Azure DevOps: Repos, pipelines YAML y Boards</strong></td><td><span class="estado par">Parcial</span></td><td><code>azure-pipelines.yml</code> (equivalente al workflow de GitHub)</td><td>Recorrer el YAML. Boards todavía no está documentado</td></tr>
+        <tr><td>Deseable: IA para casos, datos y scripts</td><td><span class="estado ok">Cubierto</span></td><td>La POC se construyó con Claude Code; <code>CLAUDE.md</code> guarda las reglas</td><td>Explicar cómo se revisa lo generado: el log muestra lo que se envía de verdad</td></tr>
+        <tr><td>Deseable: JMeter o k6</td><td><span class="estado no">Pendiente</span></td><td>—</td><td>—</td></tr>
+        <tr><td>Deseable: Docker y WireMock</td><td><span class="estado no">Pendiente</span></td><td>Mockoon cumple el rol de mock; Podman está instalado</td><td>—</td></tr>
+        <tr><td>Deseable: sector bancario o financiero</td><td><span class="estado par">Parcial</span></td><td>Tablas de cuentas y movimientos, conciliación de saldos en SQL</td><td>Escenario «Conciliación: el saldo de cada cuenta coincide…»</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ═════════════ DEMO ═════════════ -->
+  <section id="demo">
+    <span class="kicker">Para entrevistas · 2</span>
+    <h2>Demo en 5 minutos</h2>
+    <p class="lead">Un guion para mostrar la POC en vivo. Antes de la entrevista, deja Mockoon corriendo en una terminal.</p>
+    <ol class="demo">
+      <li><strong>El mock.</strong> Mostrar <code>mocks/usuarios-api.json</code> en Mockoon Desktop (rutas, reglas, data bucket) o levantarlo con la CLI.
+        <pre>npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction</pre></li>
+      <li><strong>Un caso legible.</strong> Abrir <code>usuarios/get-usuarios.feature</code>: Background con reset, <code>match each response == esquemaUsuario</code> y el Scenario Outline.</li>
+      <li><strong>La suite rápida y el reporte.</strong>
+        <pre>.\mvnw.cmd test "-Dkarate.options=--tags @smoke"
+Start-Process .\target\karate-reports\karate-summary.html</pre></li>
+      <li><strong>Contratos y SOAP.</strong> <code>--tags @contract</code>; mostrar <code>OpenApiContrato</code> y la validación XSD de la respuesta SOAP.</li>
+      <li><strong>SQL.</strong> <code>--tags @sql</code>; leer en voz alta el JOIN con SUM y GROUP BY que elige el dato y luego se consulta en la API.</li>
+      <li><strong>Carga.</strong> <code>.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"</code> y <code>node scripts\resumen-performance.mjs</code>: TPS, p95/p99, recursos y el hallazgo del perfil de estrés.</li>
+      <li><strong>CI.</strong> Recorrer <code>azure-pipelines.yml</code>: Mockoon CLI, Karate, Newman, Gatling, <code>PublishTestResults</code> y el artefacto de reportes.</li>
+    </ol>
+  </section>
+
+  <!-- ═════════════ PATRONES ═════════════ -->
+  <section id="patrones">
+    <span class="kicker">Para entrevistas · 3</span>
+    <h2>Patrones y prácticas, y dónde están</h2>
+    <p class="lead">Pregunta típica: «¿cómo organizaste el framework?». Estas son las prácticas de este proyecto, con el archivo donde se ven.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Práctica</th><th>Dónde</th><th>Para qué sirve aquí</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Punto de entrada único</strong></td><td><code>ApiTestRunner</code> (Surefire solo incluye esa clase)</td><td>Un solo lugar decide qué se ejecuta, con un hilo, y falla el build si hay escenarios fallidos</td></tr>
+        <tr><td><strong>Data-driven</strong></td><td><code>Examples: | read('classpath:data/...') |</code></td><td>Los casos negativos (emails inválidos, payloads malformados, 401) se agregan como filas en JSON o CSV, sin tocar el feature</td></tr>
+        <tr><td><strong>Features reutilizables</strong></td><td><code>common/reset.feature</code>, <code>common/login.feature</code></td><td><code>call</code> en cada escenario; <code>callonce</code> para un login por feature. Llevan <code>@ignore</code> para no ejecutarse solos</td></tr>
+        <tr><td><strong>Esquemas y errores esperados como datos</strong></td><td><code>common/schemas/</code></td><td><code>#number</code>, <code>#regex</code>, <code>#boolean</code> validan forma y tipo; los cuerpos de error se comparan completos</td></tr>
+        <tr><td><strong>Aislamiento de datos</strong></td><td><code>POST /api/test/reset</code> al inicio del Background</td><td>Cada escenario parte de los mismos 3 usuarios: se puede ejecutar solo y en cualquier orden</td></tr>
+        <tr><td><strong>Configuración por entorno</strong></td><td><code>karate-config.js</code>, <code>-Dkarate.env</code>, <code>-DbaseUrl</code></td><td>La misma suite corre en local y en CI, y contra otro puerto, sin cambiar los features</td></tr>
+        <tr><td><strong>Validador que devuelve la lista de errores</strong></td><td><code>OpenApiContrato</code>, <code>XmlContrato</code>, <code>camposSensibles()</code></td><td><code>match ... == []</code>: si falla, el reporte muestra todos los problemas a la vez, no solo el primero</td></tr>
+        <tr><td><strong>Contrato como fuente de verdad</strong></td><td><code>contracts/openapi.yaml</code>, <code>contracts/usuarios.wsdl</code></td><td>Se detecta un status no documentado, un campo de más o un tipo distinto aunque el caso no lo revise</td></tr>
+        <tr><td><strong>Reutilizar features como carga</strong></td><td><code>performance/*.feature</code> con <code>karate-gatling</code></td><td>Un feature es un usuario virtual; la carga solo lee datos para no pisarse entre usuarios</td></tr>
+        <tr><td><strong>SLA como aserción</strong></td><td><code>UsuariosSimulation.aserciones()</code></td><td>p95, p99, errores y TPS fallan el build en vez de quedar como un número en un reporte</td></tr>
+        <tr><td><strong>Consultas parametrizadas</strong></td><td><code>BaseDeDatos</code> (<code>PreparedStatement</code>)</td><td>Nunca SQL concatenado: un escenario prueba que un intento de inyección no altera la consulta</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ═════════════ DECISIONES ═════════════ -->
+  <section id="decisiones">
+    <span class="kicker">Para entrevistas · 4</span>
+    <h2>Decisiones técnicas: por qué así</h2>
+    <p class="lead">Las preguntas de «¿por qué?» distinguen a quien armó el framework de quien solo lo usa.</p>
+    <div class="grid">
+      <div class="card"><h3>🧵 Un solo hilo, a propósito</h3><p>El mock guarda los usuarios en un único data bucket y cada escenario lo restablece. En paralelo, un reset borraría los datos que otro escenario está validando. Paralelizar exigiría aislar datos (por ejemplo, ids únicos por escenario).</p></div>
+      <div class="card"><h3>⏱️ Sin esperas fijas</h3><p>No hay <code>Thread.sleep</code> ni <code>karate.pause</code>. La lentitud la produce el mock (latencia de 15 s en <code>/api/usuarios/lento</code>) y el caso mide <code>responseTime</code> o espera el timeout del cliente.</p></div>
+      <div class="card"><h3>📌 Karate 1.5.2 y no 2.x</h3><p>Karate 2.x solo publica integración con JUnit 6; el proyecto se definió con JUnit 5, cuya última versión compatible es 1.5.2. Actualizar es una decisión explícita, no automática.</p></div>
+      <div class="card"><h3>📜 Validar contratos en Java, sin hacer solicitudes</h3><p>Karate hace la solicitud y entrega status, cabeceras y bytes a <code>OpenApiContrato</code> o <code>XmlContrato</code>. Así todas las solicitudes HTTP pasan por Karate y el validador es reutilizable.</p></div>
+      <div class="card"><h3>🗄️ H2 en modo PostgreSQL</h3><p>Una base real habría exigido un servidor. H2 en memoria se recrea en cada escenario con <code>schema.sql</code> y <code>datos.sql</code>, y con <code>-Ddb.url</code> la misma clase apunta a otra base.</p></div>
+      <div class="card"><h3>📈 TPS mínimo derivado, no inventado</h3><p>Con 20 consultas × 2 + 5 logins × 2 + 5 SOAP = 55 solicitudes/s en régimen, y la rampa de 10 s, la media ronda 48,6. Se exige ≥ 45: si el servicio no da abasto, el TPS cae y el build falla.</p></div>
+      <div class="card"><h3>🧪 Postman como entregable aparte</h3><p>Las pruebas automatizadas usan solo Karate. La colección demuestra el uso avanzado de Postman (variables, scripts, esquema) y corre en CI con Newman, publicando su JUnit.</p></div>
+      <div class="card"><h3>🔁 Pasos que corren aunque Karate falle</h3><p>En CI, Newman, Gatling y la publicación usan <code>succeededOrFailed()</code> o <code>!cancelled()</code>: un fallo funcional no oculta el resto de la información, y el job termina igual en rojo.</p></div>
+    </div>
+  </section>
+
+  <!-- ═════════════ ENTREVISTA ═════════════ -->
+  <section id="entrevista">
+    <span class="kicker">Para entrevistas · 5</span>
+    <h2>Preguntas típicas y cómo responderlas</h2>
+    <p class="lead">Intenta responder antes de abrirlas. Las respuestas se apoyan en lo que tiene este proyecto.</p>
+    <h3 class="sub">Automatización y API</h3>
+    <details class="qa"><summary>¿Por qué Karate y no RestAssured?</summary><div class="a">Karate es un DSL: la solicitud y la validación se leen en el mismo <code>.feature</code>, sin escribir clases. <code>match</code> compara estructuras completas con marcadores (<code>#string</code>, <code>#regex</code>), trae XPath para SOAP, data-driven con <code>Examples</code> y reutiliza los mismos features en Gatling. RestAssured es una librería Java: conviene cuando el equipo quiere toda la lógica en código, con su propio framework de aserciones. En ambos casos lo importante es lo mismo: datos aislados, contratos y casos negativos.</div></details>
+    <details class="qa"><summary>¿Cómo diseñas los casos de una API?</summary><div class="a">Por cada operación: el camino feliz (<code>@smoke</code>), la persistencia (crear y luego leer), los límites y caracteres especiales, y los negativos: datos inválidos (422), recurso inexistente (404), payload malformado (400), sin autenticación (401) y sin permisos (403). En cada negativo valido el código, el <code>Content-Type</code> y el cuerpo de error completo, no solo el status.</div></details>
+    <details class="qa"><summary>¿Cuál es la diferencia entre 401 y 403?</summary><div class="a">401: no se sabe quién llama (sin token, token incorrecto o mal formado); la respuesta incluye <code>WWW-Authenticate: Bearer</code>. 403: se sabe quién llama, pero no tiene permisos. En la POC, <code>qa_sin_permisos</code> obtiene un token válido y recibe 403 en <code>/api/secure/usuarios</code>.</div></details>
+    <details class="qa"><summary>¿Cómo verificas lo que realmente se envía?</summary><div class="a">En <code>target/karate.log</code>, y en CI con <code>--log-transaction</code> de Mockoon. Así descubrí que <code>header X = null</code> no omite la cabecera: envía el texto <code>null</code>. Por eso los casos de cabecera ausente son escenarios propios, sin el paso <code>header</code>.</div></details>
+    <details class="qa"><summary>¿Qué diferencia hay entre un timeout del cliente y un 504?</summary><div class="a">En el timeout del cliente no hay respuesta: Karate corta la lectura (<code>SocketTimeoutException</code>) y no existe código HTTP. En un 504 el servidor (gateway) sí responde, con un código de estado. El 524 es propio de Cloudflare; Mockoon solo simula la respuesta.</div></details>
+    <h3 class="sub">Contratos, REST y SOAP</h3>
+    <details class="qa"><summary>¿Cómo validas un contrato OpenAPI?</summary><div class="a">Dos niveles. Primero, que la especificación sea válida. Después, por cada respuesta real, <code>OpenApiContrato</code> revisa que el status esté documentado para esa operación, que las cabeceras requeridas estén y que el cuerpo cumpla el esquema: tipos, requeridos y campos de más. Devuelve la lista de errores y el caso exige <code>== []</code>.</div></details>
+    <details class="qa"><summary>REST vs SOAP: ¿qué cambia al probar?</summary><div class="a">SOAP siempre es POST a un endpoint, con un sobre XML y la operación en el <code>SOAPAction</code>; el contrato es el WSDL con su XSD. Los errores son SOAP Fault, con HTTP 500 en SOAP 1.1. Karate envía con <code>soap action</code>, valida con XPath (<code>/Envelope/Body/...</code>, sin prefijos) y la respuesta se valida contra el XSD. REST usa métodos y códigos HTTP, normalmente JSON, con OpenAPI como contrato.</div></details>
+    <details class="qa"><summary>¿Cuál es la diferencia entre un esquema de Karate y un contrato OpenAPI?</summary><div class="a">El esquema de Karate (<code>usuario.json</code> con marcadores) lo escribe QA para un caso. El contrato OpenAPI es el acuerdo entre equipos: si desarrollo cambia la API sin actualizarlo, la validación de contrato lo detecta aunque ningún caso revise ese campo.</div></details>
+    <h3 class="sub">SQL y datos</h3>
+    <details class="qa"><summary>¿Cómo usas SQL en tus pruebas?</summary><div class="a">Para <strong>preparar</strong> (elegir el dato con una consulta, por ejemplo el usuario activo con mayor saldo, con JOIN, SUM, GROUP BY y LIMIT, y luego consultarlo en la API) y para <strong>validar</strong> (comparar la respuesta de la API con la tabla, conciliar saldos y comprobar la integridad). Siempre con parámetros (<code>?</code>), nunca concatenando.</div></details>
+    <details class="qa"><summary>¿Cómo encuentras registros sin relación?</summary><div class="a">Con LEFT JOIN y <code>WHERE c.id IS NULL</code>: en la POC devuelve a Carla Muñoz, la única sin cuentas activas. Si la condición sobre la tabla de la derecha va en el <code>ON</code> y no en el <code>WHERE</code>, el LEFT JOIN no se convierte en INNER JOIN.</div></details>
+    <h3 class="sub">Performance y monitoreo</h3>
+    <details class="qa"><summary>¿Qué diferencia hay entre carga y estrés?</summary><div class="a">Carga: el tráfico esperado, sostenido, contra un SLA (aquí p95 &lt; 500 ms, p99 &lt; 800 ms, errores &lt; 1 %, TPS ≥ 45). Estrés: aumentar por escalones hasta encontrar dónde se degrada. Hay otras, como pico (spike) y resistencia (soak), que no están en la POC.</div></details>
+    <details class="qa"><summary>¿Por qué p95 y p99, y no el promedio?</summary><div class="a">El promedio esconde a los usuarios que esperan más. El p95 dice que el 95 % respondió por debajo de ese valor; el p99 muestra la cola, donde aparecen bloqueos, GC o colas. Un p99 muy superior a la mediana es una señal aunque el promedio se vea bien.</div></details>
+    <details class="qa"><summary>¿Cómo detectas un cuello de botella?</summary><div class="a">Correlacionando el tiempo de respuesta con los recursos durante la prueba. En el perfil de estrés, el CPU medio del mock subió con cada escalón (de 21,5 % a 51 % de un núcleo) mientras el host no pasó de 32 %: con más carga, el hilo de eventos de Node sería el primero en saturarse. En otra ejecución el límite fue el inyector (se agotaron los puertos efímeros de Windows) mientras el servidor seguía respondiendo en 28 ms de p99.</div></details>
+    <details class="qa"><summary>¿Qué mirarías en Instana durante una prueba?</summary><div class="a">En la Application Perspective del servicio: calls por segundo (TPS), latencia con percentiles y erroneous calls, por servicio y por endpoint, filtrados a la ventana de la prueba. En Infrastructure: CPU y memoria del host y del proceso (heap y GC en una JVM, event loop en Node). Luego comparar con Gatling: si Gatling mide mucho más que Instana, el tiempo está en la red o en el inyector; si ambos lo ven, las trazas muestran qué componente lo consumió.</div></details>
+    <h3 class="sub">CI/CD, Git y Postman</h3>
+    <details class="qa"><summary>¿Cómo integras las pruebas en Azure DevOps?</summary><div class="a">Con un pipeline YAML: trigger en <code>main</code> y <code>feature/*</code> y en PR a <code>main</code>, agente <code>ubuntu-latest</code>, Java 21 y Node, caché de Maven. Valida y levanta el mock, espera el health check con <code>curl --retry</code>, ejecuta Karate, Newman y Gatling, publica los JUnit con <code>PublishTestResults</code> (pestaña Tests) y los reportes como artefacto. En Boards, los commits y PR se vinculan a work items mencionando <code>#123</code> en Azure Repos o <code>AB#123</code> desde GitHub.</div></details>
+    <details class="qa"><summary>¿Cómo resolviste un conflicto de merge?</summary><div class="a">Los archivos compartidos son los que más chocan: <code>karate-config.js</code>, <code>common/</code>, los datos y <code>mocks/usuarios-api.json</code>. Actualizo mi rama con <code>main</code>, resuelvo en local conservando lo de ambas ramas y vuelvo a validar: <code>mockoon-cli validate</code> y la suite. En el mock reviso además que el orden de las rutas siga igual (<code>lento</code>, <code>999</code> y DELETE antes del CRUD).</div></details>
+    <details class="qa"><summary>¿Qué es un uso «avanzado» de Postman?</summary><div class="a">Variables por ámbito (colección, entorno, locales), scripts previos (un email único con <code>Date.now()</code>), tests que guardan valores para encadenar solicitudes (el token tras el login, el id del usuario creado), validación de esquema con <code>jsonSchema</code>, un test común a nivel de colección (tiempo de respuesta) y ejecución en CI con Newman y reporte JUnit.</div></details>
+    <details class="qa"><summary>¿Cómo usas la IA en tu trabajo de QA?</summary><div class="a">Para acelerar casos, datos y scripts, con revisión obligatoria. Esta POC se construyó con un asistente de código (Claude Code), con reglas en <code>CLAUDE.md</code>: no inventar versiones ni resultados y verificar en el log lo que se envía. Lo generado se valida ejecutándolo; por ejemplo, el comportamiento de <code>header X = null</code> se confirmó en el log y no se dio por supuesto.</div></details>
+  </section>
+
+  <!-- ═════════════ GLOSARIO ═════════════ -->
+  <section id="glosario">
+    <span class="kicker">Para entrevistas · 6</span>
+    <h2>Glosario</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Término</th><th>Qué es</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Karate DSL</strong></td><td>Framework de pruebas de API con sintaxis Gherkin; corre en la JVM e incluye cliente HTTP, aserciones y soporte de JSON y XML</td></tr>
+        <tr><td><strong>match difuso</strong></td><td>Comparación con marcadores (<code>#string</code>, <code>#number</code>, <code>#regex</code>, <code>#notpresent</code>) en vez de valores fijos</td></tr>
+        <tr><td><strong>Scenario Outline</strong></td><td>Un escenario que se repite por cada fila de <code>Examples</code>; con <code>!</code> en la columna, el valor se evalúa como número u objeto</td></tr>
+        <tr><td><strong>call / callonce</strong></td><td>Ejecutar otro feature y recibir sus variables; <code>callonce</code> lo hace una sola vez por feature</td></tr>
+        <tr><td><strong>Data bucket</strong></td><td>Almacén de datos de Mockoon que las rutas leen y modifican; aquí guarda los usuarios</td></tr>
+        <tr><td><strong>OpenAPI (Swagger)</strong></td><td>Especificación YAML/JSON de una API REST: rutas, parámetros, respuestas y esquemas</td></tr>
+        <tr><td><strong>WSDL / XSD</strong></td><td>Contrato de un servicio SOAP (operaciones y endpoint) y el esquema XML de sus mensajes</td></tr>
+        <tr><td><strong>SOAPAction / SOAP Fault</strong></td><td>Cabecera que indica la operación en SOAP 1.1; mensaje de error estándar dentro del Body</td></tr>
+        <tr><td><strong>Bearer token / API Key</strong></td><td>Credenciales en <code>Authorization: Bearer …</code> o en una cabecera propia (<code>X-API-Key</code>)</td></tr>
+        <tr><td><strong>TPS</strong></td><td>Transacciones (solicitudes) por segundo que el sistema procesa</td></tr>
+        <tr><td><strong>p95 / p99</strong></td><td>Percentiles de tiempo de respuesta: el 95 % o el 99 % de las solicitudes respondió por debajo de ese valor</td></tr>
+        <tr><td><strong>Inyección abierta</strong></td><td>Modelo de Gatling en que llegan N usuarios por segundo, respondan o no los anteriores; refleja el tráfico real de una API</td></tr>
+        <tr><td><strong>SLA</strong></td><td>Acuerdo de nivel de servicio: los umbrales que la prueba exige (latencia, errores, throughput)</td></tr>
+        <tr><td><strong>APM</strong></td><td>Monitoreo del rendimiento de aplicaciones (Instana, Dynatrace, New Relic): métricas, trazas e infraestructura desde el servidor</td></tr>
+        <tr><td><strong>Newman</strong></td><td>Ejecutor de colecciones de Postman en línea de comandos; se usa en CI</td></tr>
+        <tr><td><strong>PreparedStatement</strong></td><td>Consulta SQL con parámetros <code>?</code>; separa código y datos y evita la inyección SQL</td></tr>
+        <tr><td><strong>Surefire</strong></td><td>Plugin de Maven que ejecuta las pruebas en <code>mvn test</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer>Arquitectura · POC Karate + Mockoon · <a href="guia_qa_poc_api_rest_karate_mockoon.html">Guía QA</a></footer>
+</div>
+
+<script>
+const AREAS=[
+ {n:"Caso y datos",c:"var(--a0)"},{n:"Ejecución Karate",c:"var(--a1)"},{n:"Mock (Mockoon)",c:"var(--a2)"},
+ {n:"Contratos y SQL",c:"var(--a3)"},{n:"Performance",c:"var(--a4)"},{n:"Postman y curl",c:"var(--a5)"},{n:"CI y reportes",c:"var(--a6)"}
+];
+const ETAPAS={
+ 1:{t:"El caso y sus datos",r:"Todo parte de un .feature: Gherkin de Karate con la solicitud y la validación en el mismo escenario. Los datos de prueba (JSON, CSV y XML) viven fuera del feature, en src/test/resources/data, y los esquemas y errores esperados en common/schemas."},
+ 2:{t:"La ejecución con Karate",r:"Maven (con el wrapper) lanza Surefire, que solo ejecuta ApiTestRunner. Este corre las carpetas de features con un hilo y falla el build si algún escenario falla. karate-config.js aporta baseUrl, timeouts y entorno. common/ tiene los features reutilizables: reset, login y get-lento. Cada corrida deja reportes y el log HTTP en target/."},
+ 3:{t:"El mock: Mockoon",r:"Un servidor Mockoon en localhost:3001, definido en mocks/usuarios-api.json. Simula la API REST de usuarios, la autenticación, los errores HTTP, una ruta lenta y un servicio SOAP. Los usuarios viven en un data bucket compartido que POST /api/test/reset restablece. Desktop para desarrollar y ver los logs, CLI para la terminal y el CI."},
+ 4:{t:"Contratos: OpenAPI y WSDL/XSD",r:"Los features llaman a clases Java de soporte/ con Java.type. OpenApiContrato valida status, cabeceras y cuerpo de cada respuesta REST contra contracts/openapi.yaml; XmlContrato valida las respuestas SOAP contra el XSD incluido en usuarios.wsdl. Ambos devuelven la lista de errores."},
+ 5:{t:"Datos con SQL",r:"BaseDeDatos recrea en cada escenario una base H2 en memoria (modo PostgreSQL) con schema.sql y datos.sql: usuarios, cuentas y movimientos. Los features la usan para preparar datos con consultas (JOIN, agregaciones) y para validar lo que devuelve la API."},
+ 6:{t:"Performance: Gatling y recursos",r:"Con gatling:test, Maven lanza otra JVM con UsuariosSimulation. Cada usuario virtual ejecuta un feature de performance/ mediante karate-gatling. Las aserciones de SLA fallan el build. MonitorRecursos mide CPU y memoria mientras dura la prueba y resumen-performance.mjs junta TPS, latencias, recursos y hallazgos."},
+ 7:{t:"Postman, Newman y curl",r:"Una colección de Postman independiente, con variables, scripts previos y de prueba, que Newman ejecuta desde la terminal o el CI y reporta en JUnit. curl sirve para reproducir a mano una solicitud REST o SOAP."},
+ 8:{t:"CI/CD: GitHub Actions y Azure DevOps",r:"Dos pipelines equivalentes: en cada push y PR, un agente ubuntu-latest valida y levanta Mockoon CLI, ejecuta Karate, Newman y Gatling, y publica los resultados JUnit y los reportes como artefacto."}
+};
+// k: marco | nodo | nota.  a = área.  et = etapa.  q = qué es · p = por qué está aquí · f = dónde vive
+const EL=[
+ // Etapa 1 · caso y datos
+ {id:"proy",k:"marco",cls:"solido",et:1,x:10,y:10,w:302,h:560,t:"Proyecto · archivos",q:"Los archivos del repositorio que definen qué se prueba, con qué datos, contra qué contrato y cómo corre en CI.",p:"Todo lo de esta columna se edita a mano; lo de la derecha es lo que corre.",f:"raíz del repositorio"},
+ {id:"feat",k:"nodo",a:0,et:1,x:24,y:36,w:274,h:46,t:"*.feature (Gherkin de Karate)",s:"src/test/java/<carpeta>/",q:"Los casos: cada escenario arma la solicitud (path, request, header, method) y la valida con status y match. Carpetas health, usuarios, auth, errores, contratos, soap y sql.",p:"Se leen sin saber programar y no necesitan clases Java. Los tags (@smoke, @negative, @security, @contract, @soap, @sql, @timeout) filtran qué correr; todos llevan @regression.",f:"src/test/java/usuarios/get-usuarios.feature, auth/authorization.feature…"},
+ {id:"data",k:"nodo",a:0,et:1,x:24,y:96,w:274,h:46,t:"Datos de prueba",s:"resources/data · JSON, CSV, XML",q:"Usuarios de ejemplo, credenciales de laboratorio, emails inválidos (CSV), payloads malformados, códigos de error y los mensajes SOAP en XML.",p:"Saca los datos de los features: un caso negativo nuevo es una fila más en el archivo, sin tocar el escenario.",f:"src/test/resources/data/ · read('classpath:data/…')"},
+ {id:"schemas",k:"nodo",a:0,et:1,x:24,y:156,w:274,h:46,t:"common/schemas",s:"marcadores difusos · errores",q:"usuario.json describe la forma de un usuario con marcadores (#number, #string, #regex del email y del rol, #boolean). Los demás son cuerpos de error esperados completos (datos inválidos, payload malformado, no encontrado).",p:"Un solo lugar define cómo debe verse un usuario: si la API agrega o cambia un campo, fallan todos los casos que lo validan.",f:"src/test/java/common/schemas/ · match each response == esquemaUsuario"},
+ {id:"kconf",k:"nodo",a:1,et:2,x:24,y:216,w:274,h:46,t:"karate-config.js",s:"baseUrl · timeouts · env local/ci",q:"Se ejecuta antes de cada escenario y devuelve las variables globales: baseUrl (por defecto http://localhost:3001 o -DbaseUrl), timeouts (5 s de conexión, 20 s de lectura, 5 s corto) y maxResponseTimeMs.",p:"La misma suite corre en local y en CI sin cambiar los features. Un karate.env distinto de local o ci falla de inmediato.",f:"src/test/java/karate-config.js"},
+ {id:"mockjson",k:"nodo",a:2,et:3,x:24,y:456,w:274,h:46,t:"mocks/usuarios-api.json",s:"rutas · reglas · data buckets",q:"El entorno de Mockoon completo: rutas REST y SOAP, reglas por cuerpo y cabeceras, plantillas de respuesta, latencias y data buckets.",p:"El mismo archivo lo abren Mockoon Desktop y la CLI. Se valida con mockoon-cli validate antes de usarlo en CI.",f:"mocks/usuarios-api.json"},
+ {id:"contracts",k:"nodo",a:3,et:4,x:24,y:276,w:274,h:46,t:"contracts/",s:"openapi.yaml · usuarios.wsdl",q:"Los contratos formales: la especificación OpenAPI de la API REST y el WSDL del servicio SOAP, con su XSD incluido.",p:"Son la fuente de verdad de la interfaz. Al cambiar el mock hay que actualizarlos; un escenario comprueba que el WSDL servido por el mock es igual a este archivo.",f:"src/test/resources/contracts/"},
+ {id:"sql",k:"nodo",a:3,et:5,x:24,y:336,w:274,h:46,t:"sql/",s:"schema.sql · datos.sql",q:"El esquema (tablas usuarios, cuentas y movimientos, con sus restricciones) y los datos semilla.",p:"Los usuarios semilla coinciden con los iniciales del mock: así se puede comparar la API con la tabla.",f:"src/test/resources/sql/"},
+ {id:"postman",k:"nodo",a:5,et:7,x:24,y:396,w:274,h:46,t:"postman/",s:"colección · entorno local",q:"Colección con 5 carpetas (Preparación, Autenticación, CRUD encadenado, SOAP, Errores) y el entorno local: baseUrl, usuario, password, apiKey, token y maxResponseTimeMs.",p:"Demuestra el uso avanzado de Postman: variables, scripts previos y de prueba, validación de esquema y un test común a toda la colección.",f:"postman/usuarios-api.postman_collection.json · local.postman_environment.json"},
+ {id:"pipelines",k:"nodo",a:6,et:8,x:24,y:516,w:274,h:46,t:"Pipelines YAML",s:"api-tests.yml · azure-pipelines.yml",q:"La definición del CI para GitHub Actions y para Azure DevOps. Hacen los mismos pasos.",p:"El pipeline vive versionado junto al código: un cambio en uno se replica en el otro.",f:".github/workflows/api-tests.yml · azure-pipelines.yml"},
+ // Etapa 2 · ejecución
+ {id:"jvm",k:"marco",cls:"solido pc",et:2,x:330,y:10,w:452,h:560,t:"Tu PC · JVM · mvnw",q:"El proceso Java que ejecuta las pruebas. Todo lo de este marco corre en la JVM; Gatling corre en otra JVM lanzada por Maven.",p:"No necesita Maven instalado: el wrapper (mvnw.cmd) descarga Maven 3.9.9 la primera vez.",f:"pom.xml · mvnw.cmd"},
+ {id:"maven",k:"nodo",a:1,et:2,x:346,y:36,w:420,h:46,t:"Maven Wrapper + Surefire",s:".\\mvnw.cmd test · -Dkarate.options",q:"Maven compila y copia los .feature como recursos de prueba; Surefire ejecuta las pruebas, y solo incluye ApiTestRunner.",p:"Es el punto de entrada de cualquier corrida, local o en CI. -Dkarate.options cambia tags y rutas sin tocar el código.",f:"pom.xml (maven-surefire-plugin, testResources)"},
+ {id:"runner",k:"nodo",a:1,et:2,x:346,y:106,w:200,h:46,t:"ApiTestRunner",s:"JUnit 5 · parallel(1)",q:"La única clase de prueba: Runner.path(…) con la lista de carpetas funcionales, reportes JUnit XML y Cucumber JSON, y assertEquals(0, failCount).",p:"Un hilo, porque todos los escenarios comparten el data bucket del mock. Una carpeta nueva debe agregarse a su lista o no se ejecuta.",f:"src/test/java/ApiTestRunner.java"},
+ {id:"engine",k:"nodo",a:1,et:2,x:566,y:106,w:200,h:46,t:"Motor Karate",s:"HTTP · match · XPath",q:"Interpreta cada paso: arma y envía la solicitud HTTP, guarda response, responseStatus y responseTime, y evalúa match sobre JSON y XML.",p:"Todas las solicitudes HTTP de las pruebas pasan por aquí: no hay RestAssured ni otro cliente.",f:"io.karatelabs:karate-junit5 1.5.2"},
+ {id:"common",k:"nodo",a:1,et:2,x:346,y:176,w:200,h:46,t:"common/",s:"reset · login · get-lento",q:"Features reutilizables con @ignore: reset.feature restablece los usuarios, login.feature devuelve un token y get-lento.feature aísla la llamada con timeout corto. También campos-sensibles.js.",p:"Evita repetir pasos. reset va primero en el Background de los features que modifican datos; login se usa con callonce (un login por feature).",f:"src/test/java/common/"},
+ // Etapa 3 · mock
+ {id:"mockF",k:"marco",cls:"solido mock",et:3,x:1022,y:10,w:208,h:560,t:"Mockoon 9.10.0 · :3001",q:"El servidor simulado: Mockoon Desktop o Mockoon CLI, nunca ambos en el mismo puerto.",p:"Permite probar todos los casos (errores, lentitud, SOAP) sin depender de un backend real ni de datos de otro equipo.",f:"npx.cmd @mockoon/cli@9.10.0 start --data .\\mocks\\usuarios-api.json"},
+ {id:"rest",k:"nodo",a:2,et:3,x:1034,y:40,w:184,h:50,t:"REST /api/usuarios",s:"CRUD · 400 · 404 · 422",q:"GET, POST, PUT, PATCH y DELETE de usuarios, con validaciones: 422 para datos inválidos, 400 para JSON malformado, 404 para inexistentes y 204 sin cuerpo en DELETE.",p:"Es la API principal que se prueba caso por caso, igual que la POC de Playwright con Pytest.",f:"mocks/usuarios-api.json · ruta api/usuarios"},
+ {id:"authN",k:"nodo",a:2,et:3,x:1034,y:110,w:184,h:50,t:"Auth",s:"login · Bearer · API Key",q:"POST /api/auth/login devuelve un token fijo de laboratorio (no JWT). /api/secure/usuarios exige Bearer y /api/apikey/usuarios exige X-API-Key.",p:"Distingue 401 (no se sabe quién llama, con WWW-Authenticate: Bearer) de 403 (token válido de qa_sin_permisos).",f:"mocks/usuarios-api.json · data/auth.json"},
+ {id:"errores",k:"nodo",a:2,et:3,x:1034,y:180,w:184,h:50,t:"Errores y lento",s:"12 códigos · lento 15 s",q:"/api/errores/* responde 12 códigos HTTP (con Retry-After en 429 y 503); /api/usuarios/lento tarda 15 s.",p:"Permite probar el manejo de errores y los timeouts sin esperas fijas: la lentitud la pone el mock.",f:"mocks/usuarios-api.json · data/errores-http.json"},
+ {id:"soapN",k:"nodo",a:2,et:3,x:1034,y:250,w:184,h:50,t:"SOAP /soap/usuarios",s:"WSDL · Fault con HTTP 500",q:"Servicio SOAP 1.1 con ObtenerUsuario y ListarUsuarios; ?wsdl sirve el contrato. Los errores son SOAP Fault con HTTP 500.",p:"Mockoon convierte el XML en un objeto (claves con prefijo y texto en _text) para las reglas; solo entiende los prefijos soapenv y usu.",f:"mocks/usuarios-api.json · ruta soap/usuarios"},
+ {id:"bucket",k:"nodo",a:2,et:3,x:1034,y:330,w:184,h:50,t:"Data bucket usuarios",s:"estado compartido · reset",q:"Los usuarios que leen y modifican REST y SOAP. POST /api/test/reset copia usuarios-iniciales sobre usuarios.",p:"Por este estado compartido la suite corre en un hilo: dos escenarios en paralelo se pisarían los datos.",f:"mocks/usuarios-api.json · data buckets"},
+ {id:"reglas",k:"nodo",a:2,et:3,x:1034,y:420,w:184,h:50,t:"Reglas y plantillas",s:"rutas en orden · Handlebars",q:"Mockoon evalúa las rutas en orden y elige la respuesta según reglas (cuerpo, cabeceras, parámetros). Las plantillas arman el cuerpo con los datos del bucket.",p:"El orden importa: lento, 999 y DELETE van antes de la ruta CRUD genérica.",f:"mocks/usuarios-api.json"},
+ {id:"notaMock",k:"nota",et:3,x:1034,y:500,t:"Desktop: ver cada solicitud|CLI: terminal y CI|Nunca ambos en :3001"},
+ // Etapa 4 · contratos
+ {id:"soporteM",k:"marco",et:4,x:346,y:246,w:420,h:150,t:"soporte/ · Java.type desde los features",q:"Clases Java que los features usan como funciones. No hacen solicitudes: reciben lo que Karate ya obtuvo.",p:"Lo que Karate no trae (OpenAPI, XSD, JDBC) se resuelve en Java y se usa desde el feature con una línea.",f:"src/test/java/soporte/"},
+ {id:"oas",k:"nodo",a:3,et:4,x:356,y:272,w:196,h:46,t:"OpenApiContrato",s:"status · headers · cuerpo",q:"Valida una respuesta real (método, ruta, status, cabeceras y bytes) contra openapi.yaml, con openapi-request-validator-core. También valida la especificación misma.",p:"Detecta un status no documentado, un tipo incorrecto, un campo de más o una cabecera requerida ausente, aunque el caso no lo revise.",f:"soporte/OpenApiContrato.java · contratos/openapi.feature"},
+ {id:"xml",k:"nodo",a:3,et:4,x:562,y:272,w:194,h:46,t:"XmlContrato",s:"XSD del WSDL · APIs del JDK",q:"Extrae el XSD de usuarios.wsdl y valida el Body de la respuesta SOAP con javax.xml.validation.",p:"Valida el contrato XML sin dependencias extra; se usa como match XmlContrato.validar(responseBytes) == [].",f:"soporte/XmlContrato.java · soap/usuarios-soap.feature"},
+ // Etapa 5 · SQL
+ {id:"bd",k:"nodo",a:3,et:5,x:356,y:332,w:196,h:46,t:"BaseDeDatos",s:"JDBC · PreparedStatement",q:"inicializar() recrea el esquema y los datos; consultar() y valor() ejecutan SELECT con parámetros y devuelven filas como mapas que Karate compara con match.",p:"Siempre con ? y nunca concatenando: un escenario prueba que un intento de inyección SQL no altera la consulta.",f:"soporte/BaseDeDatos.java · sql/datos-sql.feature"},
+ {id:"h2",k:"nodo",a:3,et:5,x:562,y:332,w:194,h:46,t:"H2 en memoria",s:"modo PostgreSQL",q:"Base de datos embebida que vive mientras dura la JVM. -Ddb.url, -Ddb.usuario y -Ddb.clave apuntan a otra base.",p:"Permite practicar SQL real (JOIN, LEFT JOIN, GROUP BY, HAVING, restricciones) sin instalar un servidor.",f:"pom.xml (com.h2database:h2)"},
+ // Etapa 6 · performance
+ {id:"gatM",k:"marco",et:6,x:346,y:414,w:420,h:146,t:"Gatling · otra JVM · gatling:test",q:"El plugin de Gatling lanza otra JVM y le pasa perfil, baseUrl, karate.env y la configuración del monitor desde el pom.xml.",p:"Separa la carga de la suite funcional: ApiTestRunner no ejecuta performance/.",f:"pom.xml (gatling-maven-plugin)"},
+ {id:"sim",k:"nodo",a:4,et:6,x:356,y:440,w:196,h:46,t:"UsuariosSimulation",s:"carga · estres · aserciones",q:"Define la inyección (carga: rampa de 10 s y 30 s sostenidos; estrés: 5 escalones de 10 s) y las aserciones: p95, p99, máximo, errores y TPS.",p:"Las aserciones convierten el SLA en un resultado: si no se cumple, el build falla.",f:"performance/UsuariosSimulation.java"},
+ {id:"perfF",k:"nodo",a:4,et:6,x:562,y:440,w:194,h:46,t:"performance/*.feature",s:"consultas · login · SOAP",q:"Features de carga: listar y obtener usuarios, login con recurso protegido y ObtenerUsuario por SOAP. preparar-datos.feature restablece los datos una vez al inicio.",p:"Solo leen datos: muchos usuarios virtuales a la vez no se pisan entre sí.",f:"src/test/java/performance/"},
+ {id:"mon",k:"nodo",a:4,et:6,x:356,y:500,w:196,h:46,t:"MonitorRecursos",s:"CPU y memoria cada 1 s",q:"Muestrea CPU y memoria del host, del inyector y del proceso del mock (lo encuentra por el puerto de baseUrl). Escribe recursos.csv y resumen.json.",p:"Hace lo que haría un APM como Instana en el host: correlacionar latencia con recursos para ubicar el cuello de botella.",f:"performance/MonitorRecursos.java · docs/monitoreo-instana.md"},
+ {id:"gkar",k:"nodo",a:4,et:6,x:562,y:500,w:194,h:46,t:"karate-gatling",s:"Gatling 3.11.5 · usuarios virtuales",q:"Integra Karate con Gatling: cada usuario virtual ejecuta un feature y cada solicitud HTTP queda registrada en las estadísticas de Gatling.",p:"Reutiliza los mismos pasos de Karate en vez de reescribir la carga en el DSL de Gatling.",f:"pom.xml (io.karatelabs:karate-gatling)"},
+ {id:"nodeF",k:"marco",cls:"solido node",et:6,x:800,y:10,w:204,h:560,t:"Tu PC · Node.js / terminal",q:"Herramientas fuera de la JVM: Node.js (Mockoon CLI, Newman, el script de resumen) y curl.",p:"Node.js también es requisito para levantar Mockoon CLI.",f:"Node.js 26 · curl.exe"},
+ {id:"resumen",k:"nodo",a:4,et:6,x:812,y:500,w:180,h:56,t:"resumen-performance.mjs",s:"TPS · p95 · hallazgos",q:"Lee stats.json y assertions.xml de la última ejecución de Gatling y el resumen de recursos, y escribe una tabla Markdown con hallazgos.",p:"En CI se publica en el resumen del job. No decide si la prueba pasa: eso lo hacen las aserciones de Gatling.",f:"scripts/resumen-performance.mjs"},
+ // Etapa 7 · Postman y curl
+ {id:"newman",k:"nodo",a:5,et:7,x:812,y:60,w:180,h:56,t:"Newman 6.2.3",s:"ejecuta la colección",q:"Ejecutor de colecciones de Postman en línea de comandos, con reportero cli y junit.",p:"Lleva la colección al CI: sus resultados aparecen junto a los de Karate en la pestaña Tests de Azure DevOps.",f:"npx.cmd newman@6.2.3 run …"},
+ {id:"curl",k:"nodo",a:5,et:7,x:812,y:140,w:180,h:56,t:"curl.exe",s:"reproducir a mano",q:"Cliente HTTP de línea de comandos. En PowerShell se usa curl.exe, porque curl es un alias de Invoke-WebRequest.",p:"Sirve para reproducir un fallo fuera de la suite y para el health check del pipeline (curl --retry).",f:"README.md · sección Servicio SOAP"},
+ // Resultados
+ {id:"out",k:"marco",cls:"solido",et:2,x:10,y:588,w:772,h:162,t:"Resultados · target/",q:"Lo que queda después de cada corrida. target/ no se versiona.",p:"Sirve para saber qué se probó y con qué resultado, y para analizar los fallos.",f:"target/"},
+ {id:"krep",k:"nodo",a:6,et:2,x:24,y:616,w:240,h:50,t:"karate-reports/",s:"HTML · JUnit XML · Cucumber JSON",q:"karate-summary.html con el detalle de cada feature y paso; además JUnit XML (lo publica el CI) y Cucumber JSON (integrable con Xray u otras herramientas).",p:"Es la evidencia de cada ejecución: qué pasó, qué falló y en qué paso.",f:"target/karate-reports/karate-summary.html"},
+ {id:"klog",k:"nodo",a:6,et:2,x:278,y:616,w:240,h:50,t:"karate.log",s:"cada solicitud y respuesta",q:"Log de logback con cada solicitud y respuesta HTTP completas. Se reescribe en cada ejecución.",p:"Muestra lo que se envió de verdad: así se confirmó que header X = null envía el texto null.",f:"target/karate.log · logback-test.xml"},
+ {id:"grep",k:"nodo",a:6,et:6,x:532,y:616,w:236,h:50,t:"gatling/ · gatling-recursos/",s:"HTML · CSV · resumen.md",q:"El reporte HTML de Gatling por ejecución y, aparte, las muestras de recursos y el resumen en Markdown.",p:"El análisis de la prueba: percentiles por endpoint, TPS en el tiempo y consumo de recursos.",f:"target/gatling/<ejecución>/index.html · target/gatling-recursos/"},
+ {id:"nrep",k:"nodo",a:6,et:7,x:24,y:684,w:240,h:46,t:"newman/newman.xml",s:"JUnit de la colección",q:"Resultado de Newman en formato JUnit.",p:"El CI lo publica junto con el JUnit de Karate.",f:"target/newman/newman.xml"},
+ {id:"notaOut",k:"nota",et:2,x:282,y:700,t:"target/ no se versiona.|En CI se publica como artefacto reporte-pruebas."},
+ // Etapa 8 · CI
+ {id:"ci",k:"marco",cls:"solido nube",et:8,x:800,y:588,w:430,h:162,t:"CI/CD · en cada push y PR",q:"El mismo flujo en GitHub Actions y en Azure DevOps.",p:"Las pruebas corren solas en cada cambio y el resultado queda en el PR.",f:".github/workflows/api-tests.yml · azure-pipelines.yml"},
+ {id:"gha",k:"nodo",a:6,et:8,x:812,y:616,w:196,h:50,t:"GitHub Actions",s:".github/workflows/api-tests.yml",q:"Workflow en cada push y pull request: checkout, setup-java con caché de Maven, setup-node, Mockoon CLI, Karate, Newman, Gatling y upload-artifact.",p:"Los pasos posteriores a Karate usan if: !cancelled(): corren aunque Karate falle y el job igual termina en rojo.",f:".github/workflows/api-tests.yml"},
+ {id:"azp",k:"nodo",a:6,et:8,x:812,y:616,w:196,h:50,t:"Azure Pipelines",s:"azure-pipelines.yml",q:"Pipeline YAML con trigger en main y feature/*, PR a main, un stage y un job: JavaToolInstaller, UseNode, Cache, Mockoon CLI, Karate, Newman y Gatling.",p:"Los pasos posteriores usan condition: succeededOrFailed(). PublishTestResults lleva los JUnit a la pestaña Tests.",f:"azure-pipelines.yml"},
+ {id:"agente",k:"nodo",a:6,et:8,x:1020,y:616,w:198,h:50,t:"ubuntu-latest",s:"Java 21 · Node · Mockoon CLI",q:"El agente que ejecuta el job: instala Java y Node, valida el mock, lo levanta en segundo plano y espera /api/health con curl --retry.",p:"No necesita Mockoon Desktop ni secretos: las credenciales son ficticias, de laboratorio.",f:"runs-on / pool: ubuntu-latest"},
+ {id:"pub",k:"nodo",a:6,et:8,x:812,y:684,w:406,h:46,t:"Publicación de resultados",s:"JUnit en Tests · artefacto reporte-pruebas · resumen del job",q:"JUnit de Karate y Newman, reportes HTML de Karate y Gatling, recursos, karate.log y el log de Mockoon.",p:"Quien revisa el PR ve qué falló sin ejecutar nada en su equipo.",f:"PublishTestResults@2 · PublishPipelineArtifact@1 · upload-artifact"}
+];
+// f: área (color) · d: puntos · lab: [texto, x, y, anchor]
+const AR=[
+ {id:"e_data_feat",f:0,et:1,d:[[250,96],[250,82]],lab:["read()",256,93,"start"]},
+ {id:"e_schemas_feat",f:0,et:1,d:[[24,179],[16,179],[16,59],[24,59]]},
+ {id:"e_maven_runner",f:1,et:2,d:[[446,82],[446,106]]},
+ {id:"e_runner_engine",f:1,et:2,d:[[546,129],[566,129]]},
+ {id:"e_feat_engine",f:0,et:2,d:[[298,59],[322,59],[322,94],[656,94],[656,106]],lab:["classpath:",480,91,"middle"]},
+ {id:"e_kconf_engine",f:1,et:2,d:[[298,239],[326,239],[326,164],[700,164],[700,152]],lab:["baseUrl · timeouts",660,177,"middle"]},
+ {id:"e_engine_common",f:1,et:2,d:[[576,152],[576,199],[546,199]],lab:["call",582,214,"start"]},
+ {id:"e_runner_krep",f:6,et:2,d:[[346,140],[338,140],[338,641],[264,641]],lab:["reportes",332,604,"end"]},
+ {id:"e_engine_klog",f:6,et:2,d:[[766,140],[776,140],[776,600],[398,600],[398,616]],lab:["log HTTP",470,596,"middle"]},
+ {id:"e_engine_mock",f:2,et:3,d:[[766,129],[1022,129]],lab:["HTTP JSON · SOAP XML",902,124,"middle"]},
+ {id:"e_mockjson_mock",f:2,et:3,d:[[298,479],[318,479],[318,578],[1012,578],[1012,458],[1034,458]],lab:["--data",620,574,"middle"]},
+ {id:"e_rest_bucket",f:2,et:3,d:[[1218,65],[1225,65],[1225,355],[1218,355]]},
+ {id:"e_soap_bucket",f:2,et:3,d:[[1126,300],[1126,330]],lab:["mismo bucket",1132,319,"start"]},
+ {id:"e_reglas_bucket",f:2,et:3,d:[[1126,420],[1126,380]],lab:["plantillas",1132,404,"start"]},
+ {id:"e_engine_soporte",f:3,et:4,d:[[750,152],[750,246]],lab:["Java.type",744,236,"end"]},
+ {id:"e_contracts_oas",f:3,et:4,d:[[298,295],[356,295]]},
+ {id:"e_sql_bd",f:3,et:5,d:[[298,355],[356,355]]},
+ {id:"e_bd_h2",f:3,et:5,d:[[552,355],[562,355]]},
+ {id:"e_sim_perf",f:4,et:6,d:[[552,463],[562,463]]},
+ {id:"e_sim_mon",f:4,et:6,d:[[454,486],[454,500]]},
+ {id:"e_perf_mock",f:4,et:6,d:[[756,446],[1034,446]],lab:["carga HTTP",902,441,"middle"]},
+ {id:"e_gkar_grep",f:4,et:6,d:[[700,546],[700,616]],lab:["reporte · CSV",706,612,"start"]},
+ {id:"e_grep_resumen",f:4,et:6,d:[[768,630],[792,630],[792,528],[812,528]]},
+ {id:"e_postman_newman",f:5,et:7,d:[[298,419],[322,419],[322,406],[790,406],[790,88],[812,88]],lab:["colección + entorno",560,402,"middle"]},
+ {id:"e_newman_mock",f:5,et:7,d:[[992,88],[1022,88]]},
+ {id:"e_curl_mock",f:5,et:7,d:[[992,168],[1022,168]]},
+ {id:"e_pipes_ci",f:6,et:8,d:[[24,539],[16,539],[16,772],[790,772],[790,641],[812,641]],lab:["YAML · push / PR",400,768,"middle"]},
+ {id:"e_ci_agente",f:6,et:8,d:[[1008,641],[1020,641]]},
+ {id:"e_agente_pub",f:6,et:8,d:[[1119,666],[1119,684]]}
+];
+const FLUJOS=[
+ {id:"get",n:"1 · GET de usuarios (smoke)",ci:"gha",
+  ids:["proy","feat","data","schemas","e_data_feat","e_schemas_feat","jvm","maven","e_maven_runner","runner","e_runner_engine","engine","e_feat_engine","kconf","e_kconf_engine","common","e_engine_common","e_engine_mock","mockF","rest","bucket","e_rest_bucket","out","krep","e_runner_krep","klog","e_engine_klog"],
+  pasos:[".\\mvnw.cmd test \"-Dkarate.options=classpath:usuarios/get-usuarios.feature\": Surefire ejecuta ApiTestRunner y -Dkarate.options reemplaza sus rutas por ese feature.",
+   "karate-config.js entrega baseUrl (http://localhost:3001, o el de -DbaseUrl), los timeouts y el entorno.",
+   "Background: call read('classpath:common/reset.feature') envía POST /api/test/reset y el mock deja los 3 usuarios iniciales en el data bucket.",
+   "read() carga data/usuarios.json (ids existentes, usuario nuevo) y common/schemas/usuario.json.",
+   "GET /api/usuarios → 200. match each response == esquemaUsuario valida cada elemento con marcadores (#number, #regex del email y del rol, #boolean) y match response[*].id == datos.existentes, los ids.",
+   "Scenario Outline con la columna usuarioId! (número, no texto): GET /api/usuarios/1, 2 y 3 → 200; 999 y 12345 → 404, con el cuerpo de usuario-no-encontrado.json leído en el momento del match.",
+   "Queda karate-summary.html con cada paso, y karate.log con cada solicitud y respuesta."]},
+ {id:"auth",n:"2 · Login, 401 y 403",ci:"gha",
+  ids:["proy","feat","data","e_data_feat","jvm","runner","e_runner_engine","engine","common","e_engine_common","e_engine_mock","mockF","authN","rest","out","klog","e_engine_klog"],
+  pasos:["authorization.feature hace en el Background: def sesion = callonce read('classpath:common/login.feature'). Un login real por feature, no uno por escenario.",
+   "login.feature envía POST /api/auth/login con qa_user / demo123 (data/auth.json) y valida { access_token: '#string', token_type: 'Bearer' }. Devuelve token.",
+   "GET /api/secure/usuarios con header Authorization = 'Bearer ' + sesion.token → 200. match camposSensibles(response) == [] confirma que no se expone password, token ni otros campos sensibles, en cualquier nivel del JSON.",
+   "Sin token → 401 con WWW-Authenticate: Bearer. Ese escenario no tiene paso header: header X = null enviaría el texto «null».",
+   "Token incorrecto o mal formado (Scenario Outline desde data/autorizaciones-rechazadas.json) → 401.",
+   "Login con qa_sin_permisos: el token es válido, pero /api/secure/usuarios responde 403. Se sabe quién llama, pero no puede acceder.",
+   "/api/apikey/usuarios usa X-API-Key en vez de Bearer; las claves rechazadas vienen de data/api-keys-rechazadas.json."]},
+ {id:"soap",n:"3 · SOAP con validación XSD",ci:"gha",
+  ids:["proy","feat","data","e_data_feat","contracts","jvm","runner","engine","e_runner_engine","e_engine_mock","mockF","soapN","bucket","e_soap_bucket","rest","e_rest_bucket","soporteM","xml","e_engine_soporte"],
+  pasos:["usuarios-soap.feature define usuarioId y lee data/soap/obtener-usuario.xml: el sobre SOAP con el id incrustado.",
+   "soap action 'http://poc.qa/usuarios/ObtenerUsuario' envía POST /soap/usuarios con Content-Type text/xml y la cabecera SOAPAction.",
+   "Mockoon convierte el XML en un objeto (soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text), elige la respuesta con reglas y lee el mismo data bucket que REST.",
+   "match XmlContrato.validar(responseBytes) == []: la respuesta cumple el XSD incluido en usuarios.wsdl.",
+   "XPath sin prefijos: match /Envelope/Body/ObtenerUsuarioResponse/usuario/id == '1'. Con prefijos, Karate devuelve #notpresent.",
+   "Un id inexistente → SOAP Fault con HTTP 500. Y un usuario creado por POST /api/usuarios se obtiene después por SOAP: ambos protocolos comparten el estado."]},
+ {id:"openapi",n:"4 · Contrato OpenAPI",ci:"gha",
+  ids:["proy","feat","contracts","e_contracts_oas","jvm","runner","engine","e_runner_engine","e_engine_mock","mockF","rest","authN","soporteM","oas","e_engine_soporte"],
+  pasos:["openapi.feature: def OpenApi = Java.type('soporte.OpenApiContrato').",
+   "Primer escenario: match OpenApi.erroresDeLaEspecificacion() == []. El propio openapi.yaml es válido.",
+   "Scenario Outline por método, ruta y status: Karate hace la solicitud real (GET /api/usuarios/999, DELETE /api/usuarios/2, GET /api/secure/usuarios sin token…).",
+   "erroresDeContrato(metodo, ruta) entrega responseStatus, responseHeaders y responseBytes a OpenApiContrato.validarRespuesta.",
+   "openapi-request-validator-core revisa que el status esté documentado para esa operación, que estén las cabeceras requeridas y que el cuerpo cumpla el esquema: tipos, requeridos y sin campos de más.",
+   "match … == [] muestra en el reporte todos los errores juntos. Si el mock cambia sin actualizar openapi.yaml, este feature falla."]},
+ {id:"sql",n:"5 · Preparar y validar datos con SQL",ci:"gha",
+  ids:["proy","feat","sql","e_sql_bd","jvm","engine","soporteM","bd","h2","e_bd_h2","e_engine_soporte","e_engine_mock","mockF","rest","common","e_engine_common"],
+  pasos:["Background: reset del mock, def db = Java.type('soporte.BaseDeDatos') y db.inicializar(), que recrea H2 con schema.sql y datos.sql.",
+   "Validar: GET /api/usuarios y match response == db.consultar('SELECT id, nombre, email, rol, activo FROM usuarios ORDER BY id'). La API coincide con la tabla.",
+   "Preparar: un SELECT con JOIN a cuentas, SUM(saldo), GROUP BY, ORDER BY y LIMIT 1 elige al usuario activo con mayor saldo (4700.50); luego GET /api/usuarios/{id} confirma su nombre.",
+   "LEFT JOIN cuentas … WHERE c.id IS NULL encuentra a los usuarios sin cuentas activas: Carla Muñoz.",
+   "Agregaciones: COUNT, SUM y AVG con HAVING COUNT(c.id) > 1, y totales de movimientos por tipo.",
+   "Conciliación: el saldo de cada cuenta = saldo inicial + depósitos − retiros; otro escenario altera un saldo y comprueba que la conciliación lo detecta.",
+   "Integridad: la base rechaza datos que violan sus restricciones, y un intento de inyección SQL en un parámetro no altera la consulta (PreparedStatement)."]},
+ {id:"carga",n:"6 · Carga con Gatling y monitoreo",ci:"gha",
+  ids:["jvm","maven","gatM","sim","perfF","e_sim_perf","mon","e_sim_mon","gkar","e_perf_mock","mockF","reglas","rest","authN","soapN","out","grep","e_gkar_grep","nodeF","resumen","e_grep_resumen"],
+  pasos:[".\\mvnw.cmd test-compile gatling:test \"-Dperfil=carga\": el plugin lanza otra JVM con perfil, baseUrl, karate.env y la configuración del monitor.",
+   "El constructor de UsuariosSimulation ejecuta preparar-datos.feature una vez; los features de carga solo leen.",
+   "before(): MonitorRecursos busca el PID del mock por el puerto 3001 (netstat en Windows, ss en Linux) y empieza a muestrear cada segundo.",
+   "Inyección abierta: rampa de 10 s y 30 s sostenidos a 20 consultas, 5 logins y 5 SOAP por segundo (≈55 solicitudes/s). Con karate-gatling, cada usuario virtual ejecuta un feature completo.",
+   "after(): el monitor escribe recursos.csv y resumen.json; Gatling evalúa las aserciones (p95 < 500 ms, p99 < 800 ms, máximo < 2 s, errores < 1 %, TPS ≥ 45, p95 de login y SOAP < 500 ms) y genera el HTML.",
+   "node scripts\\resumen-performance.mjs junta todo. Ejecución del 2026-11-11: 1.950 solicitudes, 48,75 TPS, p95 30 ms, p99 32 ms, 0 errores y 7 aserciones en verde.",
+   "En estrés, el CPU medio del mock subió con cada escalón mientras el host tenía margen: el hallazgo se explica con el CSV, igual que se haría con Instana."]},
+ {id:"postman",n:"7 · Postman con Newman y curl",ci:"gha",
+  ids:["proy","postman","e_postman_newman","nodeF","newman","e_newman_mock","curl","e_curl_mock","mockF","rest","authN","soapN","errores","out","nrep"],
+  pasos:["La colección tiene 5 carpetas en orden: Preparación (reset y health), Autenticación, CRUD encadenado, SOAP y Errores.",
+   "«Login correcto» guarda el token en una variable; las solicitudes siguientes lo usan como {{token}}.",
+   "«Crear usuario»: el script previo genera emailUnico con Date.now(); el test valida el esquema con jsonSchema y guarda usuarioId en una variable de colección para obtener, actualizar y eliminar ese mismo usuario.",
+   "Un test a nivel de colección se aplica a todas las solicitudes: el tiempo de respuesta debe ser menor que maxResponseTimeMs del entorno.",
+   "npx.cmd newman@6.2.3 run … -e … -r cli,junit: en CI deja target/newman/newman.xml.",
+   "curl.exe reproduce a mano cualquier solicitud, por ejemplo un ObtenerUsuario SOAP con --data-binary \"@src/test/resources/data/soap/listar-usuarios.xml\"."]},
+ {id:"pipeline",n:"8 · Pipeline en Azure DevOps",ci:"azp",
+  ids:["proy","pipelines","e_pipes_ci","ci","azp","agente","e_ci_agente","pub","e_agente_pub","out","krep","grep","nrep"],
+  pasos:["Trigger: push a main y a feature/*, y PR hacia main. Pool ubuntu-latest.",
+   "JavaToolInstaller (Java 21), UseNode y Cache@2 de Maven con la clave del pom.xml.",
+   "Valida mocks/usuarios-api.json con mockoon-cli validate, levanta Mockoon CLI con nohup y espera /api/health con curl --retry.",
+   "./mvnw -B test \"-Dkarate.env=ci\": si un escenario falla, ApiTestRunner falla y el paso queda en rojo.",
+   "Newman, Gatling y el resumen de performance corren con condition: succeededOrFailed(): aunque Karate falle, hay información completa.",
+   "PublishTestResults@2 lleva los JUnit de Karate y Newman a la pestaña Tests; PublishPipelineArtifact@1 publica reporte-pruebas con los HTML, recursos y logs.",
+   "GitHub Actions hace lo mismo con if: !cancelled() y upload-artifact."]},
+ {id:"falla",n:"Cuando algo falla",ci:"gha",
+  ids:["jvm","maven","runner","engine","e_runner_engine","mockF","rest","out","krep","klog","e_runner_krep","e_engine_klog"],
+  pasos:["Un match no se cumple: Karate indica la ruta del JSON (o el XPath) y el valor esperado frente al recibido, y el escenario se detiene en ese paso.",
+   "ApiTestRunner termina con assertEquals(0, failCount, errorMessages): Maven muestra los mensajes y termina con BUILD FAILURE.",
+   "karate-summary.html marca el paso en rojo; karate.log muestra la solicitud y la respuesta exactas.",
+   "Se clasifica con la evidencia: defecto de la API (no cumple el contrato), cambio de contrato no comunicado, datos (falta el reset o hay datos de otro escenario) o entorno (el mock no está corriendo, o Desktop y CLI compiten por el puerto 3001).",
+   "Se reproduce aislado: un solo feature con -Dkarate.options=classpath:… o la solicitud con curl.exe."]}
+];
+
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("svg");
+const POR_ID={};EL.forEach(e=>POR_ID[e.id]=e);AR.forEach(a=>POR_ID[a.id]=a);
+const MAX=8;
+let hasta=MAX,resaltar=true,flujo=null,sel=null,ci="gha";
+try{const v=parseInt(localStorage.getItem("poc-karate:arq:etapa"),10);if(v>=1&&v<=MAX)hasta=v}catch(e){}
+try{const v=localStorage.getItem("poc-karate:arq:ci");if(v==="gha"||v==="azp")ci=v}catch(e){}
+
+function excluido(id){return (id==="gha"&&ci!=="gha")||(id==="azp"&&ci!=="azp")}
+function mk(tag,attrs,padre){const el=document.createElementNS(NS,tag);for(const k in attrs)el.setAttribute(k,attrs[k]);if(padre)padre.appendChild(el);return el}
+function texto(padre,cls,x,y,t,anchor){const el=mk("text",{class:cls,x,y},padre);if(anchor)el.setAttribute("text-anchor",anchor);el.textContent=t;return el}
+function ajustar(el,ancho){try{if(el.getComputedTextLength()>ancho){el.setAttribute("textLength",ancho);el.setAttribute("lengthAdjust","spacingAndGlyphs")}}catch(e){}}
+
+function dibujar(){
+  svg.innerHTML="";
+  mk("defs",{},svg).innerHTML='<marker id="punta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="context-stroke"/></marker>';
+  const capaMarcos=mk("g",{},svg),capaAristas=mk("g",{},svg),capaNodos=mk("g",{},svg);
+  EL.forEach(e=>{
+    const g=mk("g",{class:`el ${e.k} ${e.cls||""}`,"data-id":e.id},e.k==="marco"?capaMarcos:capaNodos);
+    if(e.k!=="nota"){g.setAttribute("tabindex","0");g.setAttribute("role","button");g.setAttribute("aria-label",e.t)}
+    if(e.k==="marco"){
+      mk("rect",{x:e.x,y:e.y,width:e.w,height:e.h,rx:10},g);
+      ajustar(texto(g,"",e.x+10,e.y+16,e.t),e.w-20);
+    }else if(e.k==="nodo"){
+      mk("rect",{class:"caja",x:e.x,y:e.y,width:e.w,height:e.h,rx:6},g);
+      mk("rect",{x:e.x,y:e.y,width:5,height:e.h,rx:2,fill:AREAS[e.a].c},g);
+      const corto=e.h<50;
+      ajustar(texto(g,"t",e.x+13,e.y+(corto?19:23),e.t),e.w-20);
+      if(e.s)ajustar(texto(g,"s",e.x+13,e.y+(corto?34:40),e.s),e.w-20);
+    }else if(e.k==="nota"){
+      e.t.split("|").forEach((l,i)=>texto(g,"",e.x,e.y+i*14,l));
+    }
+  });
+  AR.forEach(a=>{
+    const g=mk("g",{class:`el arista f${a.f} ${a.cls||""}`,"data-id":a.id},capaAristas);
+    mk("path",{d:"M"+a.d.map(p=>p.join(",")).join("L"),"marker-end":"url(#punta)"},g);
+    if(a.lab)texto(g,"et",a.lab[1],a.lab[2],a.lab[0],a.lab[3]||"middle");
+  });
+  svg.querySelectorAll(".el[tabindex]").forEach(g=>{
+    g.addEventListener("click",ev=>{ev.stopPropagation();elegir(g.dataset.id)});
+    g.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();elegir(g.dataset.id)}});
+  });
+}
+
+function aplicar(){
+  const et=flujo?MAX:hasta;
+  const enFlujo=flujo?new Set(FLUJOS.find(f=>f.id===flujo).ids):null;
+  svg.querySelectorAll(".el").forEach(g=>{
+    const e=POR_ID[g.dataset.id];
+    g.classList.toggle("oculto",e.et>et||excluido(e.id));
+    g.classList.toggle("nuevo",!flujo&&resaltar&&e.et===et&&et>1);
+    g.classList.toggle("viejo",!flujo&&resaltar&&e.et<et&&et>1);
+    g.classList.toggle("dim",!!enFlujo&&!enFlujo.has(e.id));
+    g.classList.toggle("on",!!enFlujo&&enFlujo.has(e.id)&&g.classList.contains("arista"));
+    g.classList.toggle("sel",e.id===sel);
+  });
+  document.querySelectorAll("#etapas button").forEach(b=>b.setAttribute("aria-pressed",String(!flujo&&+b.dataset.k===hasta)));
+  document.querySelectorAll("#flujos button").forEach(b=>b.setAttribute("aria-pressed",String((flujo||"none")===b.dataset.k)));
+  document.querySelectorAll("#ci button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===ci)));
+  document.getElementById("ctlCi").hidden=et<MAX;
+  document.getElementById("ant").disabled=hasta<=1;
+  document.getElementById("sig").disabled=hasta>=MAX;
+  try{localStorage.setItem("poc-karate:arq:etapa",String(hasta));localStorage.setItem("poc-karate:arq:ci",ci)}catch(e){}
+}
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nombreArea=e=>e.a!=null?AREAS[e.a].n+" · ":"";
+function panelEtapa(){
+  const n=hasta,nuevos=EL.filter(e=>e.et===n&&e.k!=="nota"&&!excluido(e.id));
+  document.getElementById("panel").innerHTML=`
+    <div class="area">Etapa ${n} de ${MAX}</div>
+    <h2>${esc(ETAPAS[n].t)}</h2>
+    <p>${esc(ETAPAS[n].r)}</p>
+    <div class="chips">${nuevos.map(e=>`<button type="button" data-ir="${e.id}">${esc(e.t)}</button>`).join("")}</div>`;
+}
+function panelFlujo(){
+  const f=FLUJOS.find(x=>x.id===flujo);
+  document.getElementById("panel").innerHTML=`
+    <div class="area">Recorrido</div>
+    <h2>${esc(f.n)}</h2>
+    <ol class="pasos">${f.pasos.map(p=>`<li>${esc(p)}</li>`).join("")}</ol>`;
+}
+function panelElemento(id){
+  const e=POR_ID[id];
+  document.getElementById("panel").innerHTML=`
+    <div class="area">${esc(nombreArea(e))}Etapa ${e.et}: ${esc(ETAPAS[e.et].t)}</div>
+    <h2>${esc(e.t)}</h2>
+    <p><b>Qué es:</b> ${esc(e.q)}</p>
+    <p><b>Por qué está aquí:</b> ${esc(e.p)}</p>
+    <p><b>Dónde vive:</b> <code>${esc(e.f)}</code></p>
+    <p><button type="button" class="btn" data-volver>${flujo?"Volver al recorrido":"Volver a la etapa"}</button></p>`;
+}
+function panelCi(){
+  const az=ci==="azp";
+  document.getElementById("panel").innerHTML=`
+    <div class="area">CI y reportes · etapa 8</div>
+    <h2>${az?"Azure DevOps: azure-pipelines.yml":"GitHub Actions: api-tests.yml"}</h2>
+    <p>${az?"Se crea en Azure DevOps > Pipelines > New pipeline > Existing Azure Pipelines YAML file. Los pasos posteriores a Karate usan condition: succeededOrFailed(); PublishTestResults muestra cada escenario de Karate y cada solicitud de Newman en la pestaña Tests.":"Corre en cada push y pull request con permisos de solo lectura. Los pasos posteriores a Karate usan if: !cancelled(); upload-artifact publica reporte-pruebas aunque haya fallos."}</p>
+    <pre>${az?"- script: ./mvnw -B test \"-Dkarate.env=ci\"\n- script: npx --yes \"newman@$(NEWMAN_VERSION)\" run …\n  condition: succeededOrFailed()\n- task: PublishTestResults@2":"- run: ./mvnw -B test \"-Dkarate.env=ci\"\n- if: ${{ !cancelled() }}\n  run: npx --yes \"newman@${NEWMAN_VERSION}\" run …\n- uses: actions/upload-artifact@v7"}</pre>`;
+}
+function elegir(id){const e=POR_ID[id];if(!e||!e.q)return;sel=id;aplicar();panelElemento(id)}
+function deseleccionar(){sel=null;aplicar();flujo?panelFlujo():panelEtapa()}
+function irA(n){hasta=Math.max(1,Math.min(MAX,n));flujo=null;sel=null;aplicar();panelEtapa()}
+
+const etb=document.getElementById("etapas");
+for(let n=1;n<=MAX;n++){
+  const b=document.createElement("button");b.type="button";b.dataset.k=n;b.textContent=n;b.title=ETAPAS[n].t;
+  b.onclick=()=>irA(n);etb.appendChild(b);
+}
+const cb=document.getElementById("ci");
+[["gha","GitHub Actions"],["azp","Azure DevOps"]].forEach(([k,n])=>{
+  const b=document.createElement("button");b.type="button";b.dataset.k=k;b.textContent=n;
+  b.onclick=()=>{ci=k;sel=null;aplicar();flujo?panelFlujo():panelCi()};cb.appendChild(b);
+});
+const fl=document.getElementById("flujos");
+[{id:"none",n:"Ninguno"},...FLUJOS].forEach(f=>{
+  const b=document.createElement("button");b.type="button";b.dataset.k=f.id;b.textContent=f.n;
+  b.onclick=()=>{
+    flujo=f.id==="none"?null:f.id;sel=null;
+    if(flujo)ci=f.ci;
+    aplicar();flujo?panelFlujo():panelEtapa();
+  };
+  fl.appendChild(b);
+});
+document.getElementById("ant").onclick=()=>irA(hasta-1);
+document.getElementById("sig").onclick=()=>irA(hasta+1);
+document.getElementById("resaltar").onchange=ev=>{resaltar=ev.target.checked;aplicar()};
+document.getElementById("panel").addEventListener("click",ev=>{
+  const b=ev.target.closest("[data-ir]");if(b){elegir(b.dataset.ir);return}
+  if(ev.target.closest("[data-volver]"))deseleccionar();
+});
+svg.addEventListener("click",()=>{if(sel)deseleccionar()});
+document.getElementById("leyenda").innerHTML=AREAS.map(a=>`<span><i style="background:${a.c}"></i>${a.n}</span>`).join("")+
+  '<span><i class="l n"></i>Nuevo en la etapa</span><span><i class="l g"></i>Flecha del recorrido</span>';
+
+dibujar();aplicar();panelEtapa();
+</script>
+</body>
+</html>

@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía QA POC Karate</title>
+<style>
+  /* Mismo diseño que la guía del POC Appium (poc_appium_java_testng_maven) */
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-deep:   #0d5d3a;
+    --green-mid:    #2a9d6a;
+    --green-soft:   #e0f0e7;
+    --naranja:      #f08a3e;
+    --naranja-soft: #fdeacf;
+    --naranja-deep: #b85f1c;
+    --gold:         #c9a86a;
+    --gold-soft:    #f7efde;
+    --gold-ink:     #8a6a2e;
+    --blue:         #3a7bb5;
+    --blue-soft:    #e0eaf3;
+    --purple:       #6b3aa3;
+    --purple-soft:  #ece2f5;
+    --coral:        #d97757;
+    --coral-soft:   #fbe6dd;
+    --coral-ink:    #8c2d20;
+    --surface:      #fafaf7;
+    --surface-2:    #fff;
+    --ink:          #1a1f1c;
+    --ink-2:        #2c3530;
+    --muted:        #6b7770;
+    --border:       #e3e7e2;
+    --on-dark:      #fff;
+    --radius:       14px;
+    --shadow-sm:    0 1px 3px rgba(13,93,58,.06);
+    --shadow-md:    0 4px 14px rgba(13,93,58,.08);
+    color-scheme: light;
+  }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  code, pre { font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace; }
+  code {
+    background: var(--green-soft);
+    color: var(--green-deep);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    overflow-wrap: anywhere;
+  }
+  a { color: var(--green-mid); font-weight: 600; }
+  a:focus-visible { outline: 2px solid var(--naranja); outline-offset: 2px; }
+
+  /* ─── Layout ──────────────────────────────────────────────────────────── */
+  .container { max-width: 1100px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+  @media (max-width: 480px) { .container { padding-left: 16px; padding-right: 16px; } }
+  section { padding: 56px 0; border-top: 1px solid var(--border); }
+  section:first-of-type { border-top: none; }
+  section.alt { background: var(--green-soft); }
+
+  /* ─── Hero ────────────────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 60%, var(--naranja) 130%);
+    color: var(--on-dark);
+    padding: 72px 0 64px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -100px; right: -100px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(240,138,62,0.35) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-emoji { font-size: 64px; margin-bottom: 12px; display: block; }
+  .hero h1 { font-size: 44px; font-weight: 800; letter-spacing: -1.2px; margin-bottom: 10px; position: relative; text-wrap: balance; }
+  .hero p.slogan {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-style: italic; font-size: 19px; color: var(--on-dark); opacity: 0.95;
+    max-width: 680px; margin: 0 auto 18px; padding: 10px 22px;
+    border-top: 1px solid rgba(255,255,255,0.25); border-bottom: 1px solid rgba(255,255,255,0.25);
+    position: relative; line-height: 1.45;
+  }
+  .hero p.slogan strong { color: var(--naranja-soft); font-weight: 600; font-style: normal; letter-spacing: 0.3px; }
+  .hero p.tag { font-size: 18px; opacity: 0.92; max-width: 760px; margin: 0 auto 22px; position: relative; }
+  .hero .pills { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; position: relative; margin-top: 16px; }
+  .pill {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.28); color: var(--on-dark);
+    padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 500; backdrop-filter: blur(8px);
+  }
+  @media (max-width: 600px) { .hero h1 { font-size: 34px; } .hero p.tag { font-size: 16px; } }
+
+  /* ─── Tipografía secciones ────────────────────────────────────────────── */
+  .kicker { display: block; text-transform: uppercase; letter-spacing: 1.8px; font-size: 12px; font-weight: 700; color: var(--green-mid); margin-bottom: 8px; }
+  h2 { font-size: 30px; font-weight: 800; letter-spacing: -0.6px; color: var(--green-deep); margin-bottom: 14px; text-wrap: balance; }
+  h3 { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+  .lead { font-size: 18px; color: var(--ink-2); max-width: 800px; margin-bottom: 32px; }
+  @media (max-width: 600px) { h2 { font-size: 25px; } .lead { font-size: 16.5px; } }
+
+  /* ─── Cards ───────────────────────────────────────────────────────────── */
+  .grid { display: grid; gap: 20px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 780px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 22px 22px 20px; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s; min-width: 0;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card .icon { font-size: 28px; margin-bottom: 12px; display: block; }
+  .card h3 { font-size: 17px; margin-bottom: 6px; }
+  .card p { font-size: 14.5px; color: var(--ink-2); }
+  .card.green   { border-top: 4px solid var(--green-mid); }
+  .card.naranja { border-top: 4px solid var(--naranja); }
+  .card.gold    { border-top: 4px solid var(--gold); }
+  .card.blue    { border-top: 4px solid var(--blue); }
+  .card.purple  { border-top: 4px solid var(--purple); }
+  .card.coral   { border-top: 4px solid var(--coral); }
+
+  /* ─── Diagramas SVG ───────────────────────────────────────────────────── */
+  .diagram {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px 24px; margin-top: 16px; box-shadow: var(--shadow-sm); overflow-x: auto;
+  }
+  .diagram svg { display: block; margin: 0 auto; width: 100%; min-width: 680px; height: auto; }
+  .diagram-caption { text-align: center; color: var(--muted); font-size: 13px; margin-top: 12px; font-style: italic; }
+
+  /* ─── Tarjetas por área ───────────────────────────────────────────────── */
+  .test-types { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 20px; }
+  @media (max-width: 980px) { .test-types { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 540px) { .test-types { grid-template-columns: 1fr; } }
+  .test-card {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 18px 16px; box-shadow: var(--shadow-sm); border-top: 4px solid var(--green-mid); min-width: 0;
+  }
+  .badge {
+    display: inline-block; background: var(--green-soft); color: var(--green-deep);
+    padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    font-family: 'JetBrains Mono', Consolas, monospace; margin-bottom: 10px;
+  }
+  .test-card h3 { font-size: 16px; margin-bottom: 8px; }
+  .test-card p { font-size: 14px; color: var(--ink-2); margin-bottom: 8px; }
+  .test-card .ex { font-size: 12.5px; color: var(--muted); margin-bottom: 0; }
+  .test-card.api  { border-top-color: var(--blue); }
+  .test-card.api .badge { background: var(--blue-soft); color: var(--blue); }
+  .test-card.data { border-top-color: var(--gold); }
+  .test-card.data .badge { background: var(--gold-soft); color: var(--gold-ink); }
+  .test-card.perf { border-top-color: var(--purple); }
+  .test-card.perf .badge { background: var(--purple-soft); color: var(--purple); }
+  .test-card.sec  { border-top-color: var(--coral); }
+  .test-card.sec .badge { background: var(--coral-soft); color: var(--coral-ink); }
+  .badge.wip { background: var(--naranja-soft); color: var(--naranja-deep); }
+  .badge.no  { background: var(--coral-soft); color: var(--coral-ink); }
+
+  /* ─── Tablas ──────────────────────────────────────────────────────────── */
+  .tw { overflow-x: auto; margin-top: 18px; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+  table { width: 100%; min-width: 620px; border-collapse: collapse; background: var(--surface-2); }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14.5px; vertical-align: top; }
+  th { background: var(--green-soft); color: var(--green-deep); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 13px; }
+  tr:hover td { background: rgba(13,93,58,0.02); }
+  td.n { font-variant-numeric: tabular-nums; }
+
+  /* ─── Pasos numerados ─────────────────────────────────────────────────── */
+  .steps { counter-reset: step; display: grid; gap: 16px; margin-top: 18px; }
+  .step {
+    display: grid; grid-template-columns: 48px 1fr; gap: 18px; align-items: start;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 22px; box-shadow: var(--shadow-sm);
+  }
+  .step > div { min-width: 0; }
+  .step::before {
+    counter-increment: step; content: counter(step);
+    background: var(--green-deep); color: var(--on-dark);
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800;
+  }
+  .step h3 { margin-bottom: 6px; }
+  .step p { color: var(--ink-2); font-size: 14.5px; }
+  .step code { font-size: 13px; }
+  @media (max-width: 480px) { .step { grid-template-columns: 1fr; gap: 10px; padding: 16px; } }
+
+  pre.cmd {
+    background: #10241b; color: #dcebe2; padding: 12px 14px; border-radius: 8px;
+    font-size: 13px; line-height: 1.6; margin-top: 10px; overflow-x: auto;
+  }
+  pre.cmd .c { color: #8fb3a0; }
+  pre.cmd .k { color: #f6c48f; }
+
+  /* ─── Callout ─────────────────────────────────────────────────────────── */
+  .callout {
+    background: var(--naranja-soft); border-left: 4px solid var(--naranja); border-radius: 8px;
+    padding: 16px 20px; margin-top: 22px; color: var(--naranja-deep); font-size: 14.5px;
+  }
+  .callout strong { color: var(--naranja-deep); }
+  .callout code { background: rgba(255,255,255,.6); }
+
+  /* ─── Footer ──────────────────────────────────────────────────────────── */
+  footer { background: var(--green-deep); color: var(--on-dark); text-align: center; padding: 36px 0; font-size: 14px; }
+  footer code { background: rgba(255,255,255,.14); color: var(--on-dark); }
+
+  /* ─── Mini-nav ────────────────────────────────────────────────────────── */
+  .toc { position: sticky; top: 0; background: var(--surface); border-bottom: 1px solid var(--border); z-index: 50; padding: 12px 0; }
+  .toc ul { display: flex; gap: 6px 18px; flex-wrap: wrap; justify-content: center; list-style: none; }
+  .toc a { color: var(--ink-2); text-decoration: none; font-size: 13.5px; font-weight: 500; padding: 6px 10px; border-radius: 6px; transition: background .15s; }
+  .toc a:hover { background: var(--green-soft); color: var(--green-deep); }
+  @media (max-width: 700px) { .toc { position: static; } .toc ul { justify-content: flex-start; } }
+</style>
+</head>
+<body>
+
+<!-- ═════════════ HERO ═════════════ -->
+<header class="hero">
+  <div class="container">
+    <span class="hero-emoji">🔌</span>
+    <h1>POC API REST y SOAP con Karate + Mockoon</h1>
+    <p class="slogan">«Validar el status no basta: <strong>cuerpo, contrato, datos y tiempo de respuesta</strong>, en cada caso y en cada push.»</p>
+    <p class="tag">Pruebas automatizadas de servicios backend en Java con Karate DSL contra un mock de Mockoon: REST, SOAP,
+      contratos OpenAPI y XSD, datos con SQL, carga con Gatling, Postman con Newman y pipelines de CI. Un POC de práctica.</p>
+    <div class="pills">
+      <span class="pill">🥋 Karate 1.5.2</span>
+      <span class="pill">🎭 Mockoon 9.10.0</span>
+      <span class="pill">📜 OpenAPI + WSDL/XSD</span>
+      <span class="pill">🗄️ SQL en H2</span>
+      <span class="pill">📈 Gatling</span>
+      <span class="pill">📮 Postman + Newman</span>
+      <span class="pill">🚀 GitHub Actions + Azure DevOps</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═════════════ TOC ═════════════ -->
+<nav class="toc" aria-label="Secciones">
+  <div class="container">
+    <ul>
+      <li><a href="#que-es">¿Qué es?</a></li>
+      <li><a href="#valor">¿Qué resuelve?</a></li>
+      <li><a href="#composicion">¿De qué está hecho?</a></li>
+      <li><a href="#cobertura">Cobertura</a></li>
+      <li><a href="#punta-a-punta">De punta a punta</a></li>
+      <li><a href="#flujo">Agregar un caso</a></li>
+      <li><a href="#fallos">Cuando algo falla</a></li>
+      <li><a href="#comandos">Comandos</a></li>
+      <li><a href="#empezar">Primer ciclo</a></li>
+      <li><a href="#estado">Estado</a></li>
+      <li><a href="#profundizar">Profundizar</a></li>
+      <li><a href="arquitectura.html">Arquitectura →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ═════════════ 1. ¿QUÉ ES? ═════════════ -->
+<section id="que-es">
+  <div class="container">
+    <span class="kicker">01 · El concepto</span>
+    <h2>¿Qué es este POC?</h2>
+    <p class="lead">Es una <strong>prueba de concepto de automatización backend</strong>: una API REST de usuarios (con
+      autenticación) y un servicio SOAP, simulados con Mockoon en <code>localhost:3001</code> y probados con Karate.
+      Es la contraparte de la POC de Playwright con Pytest: las dos prueban el mismo mock y se comparan caso por caso.</p>
+
+    <div class="grid grid-3">
+      <div class="card green">
+        <span class="icon">🥋</span>
+        <h3>Karate DSL</h3>
+        <p>La solicitud y la validación se escriben en el mismo <code>.feature</code>, sin clases de prueba. <code>match</code>
+          compara estructuras completas con marcadores (<code>#string</code>, <code>#regex</code>) y XPath para XML.
+          Java 21 y un único runner de JUnit 5.</p>
+      </div>
+      <div class="card naranja">
+        <span class="icon">🎭</span>
+        <h3>Mock en vez de backend</h3>
+        <p>Mockoon simula CRUD, login, Bearer y API Key, 12 errores HTTP, una ruta que tarda 15 s y SOAP con WSDL.
+          Los casos difíciles (errores, lentitud) se prueban sin depender de otro equipo.</p>
+      </div>
+      <div class="card gold">
+        <span class="icon">🎯</span>
+        <h3>Pensado para un cargo</h3>
+        <p>Cubre lo que pide una oferta de QA Automation backend: REST y SOAP, OpenAPI, SQL, Gatling, monitoreo,
+          Postman, curl, Git y Azure DevOps. La <a href="arquitectura.html#cobertura">tabla de cobertura</a> lo detalla requisito por requisito.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 2. VALOR ═════════════ -->
+<section id="valor" class="alt">
+  <div class="container">
+    <span class="kicker">02 · El valor</span>
+    <h2>¿Qué problema resuelve?</h2>
+    <p class="lead">Muestra cómo probar un backend más allá del código de estado: contrato, datos, seguridad y rendimiento,
+      con casos independientes que corren igual en local y en CI.</p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <span class="icon">🧼</span>
+        <h3>Cada escenario parte limpio</h3>
+        <p>Los features que modifican datos llaman a <code>common/reset.feature</code> al inicio del Background
+          (<code>POST /api/test/reset</code>). Cada escenario se puede ejecutar solo y en cualquier orden.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📜</span>
+        <h3>Contratos, no solo respuestas</h3>
+        <p>Cada respuesta REST se valida contra <code>openapi.yaml</code> y cada respuesta SOAP contra el XSD del WSDL.
+          Un campo de más o un status no documentado falla, aunque el caso no lo revise.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🗂️</span>
+        <h3>Datos fuera del código</h3>
+        <p>Usuarios, credenciales, emails inválidos (CSV), payloads malformados y mensajes SOAP viven en
+          <code>src/test/resources/data</code>. Un caso negativo nuevo es una fila más.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔐</span>
+        <h3>Seguridad explícita</h3>
+        <p>401 frente a 403, <code>WWW-Authenticate</code>, API Key, y ningún campo sensible (password, token, hash…)
+          en ninguna respuesta, en cualquier nivel del JSON.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🗄️</span>
+        <h3>SQL para preparar y verificar</h3>
+        <p>Una base H2 en memoria con usuarios, cuentas y movimientos: JOIN, LEFT JOIN, GROUP BY, HAVING y conciliación
+          de saldos, siempre con consultas parametrizadas.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📈</span>
+        <h3>Rendimiento con criterio</h3>
+        <p>Los mismos features corren como carga en Gatling, con un SLA que falla el build (p95, p99, errores y TPS)
+          y un monitor de CPU y memoria para ubicar el cuello de botella.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 3. COMPOSICIÓN ═════════════ -->
+<section id="composicion">
+  <div class="container">
+    <span class="kicker">03 · Las piezas</span>
+    <h2>¿De qué está hecho?</h2>
+    <p class="lead">Seis capas. El QA trabaja arriba (features y datos); el resto se comparte entre todos los casos.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 880 590" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Capas del POC: rol QA, features y datos, runner y features comunes, validadores Java y Gatling, el mock de Mockoon, y CI con reportes">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L10,5 L0,10 z" fill="#2a9d6a"/>
+          </marker>
+        </defs>
+
+        <!-- Capa 1: QA -->
+        <rect x="20" y="20" width="840" height="64" rx="10" fill="#fdeacf" stroke="#f08a3e" stroke-width="2"/>
+        <text x="40" y="49" font-size="14" font-weight="700" fill="#b85f1c" font-family="Inter,sans-serif">👤 Rol QA</text>
+        <text x="40" y="69" font-size="13" fill="#6b3919" font-family="Inter,sans-serif">Diseña el caso, elige sus tags (@smoke, @negative, @security…), escribe el feature y revisa el reporte y el log.</text>
+
+        <!-- Capa 2: casos y datos -->
+        <rect x="20" y="106" width="410" height="92" rx="10" fill="#e0f0e7" stroke="#2a9d6a" stroke-width="2"/>
+        <text x="40" y="134" font-size="14" font-weight="700" fill="#0d5d3a" font-family="Inter,sans-serif">📋 Features</text>
+        <text x="40" y="155" font-size="12.5" fill="#2c3530" font-family="Inter,sans-serif">health · usuarios · auth · errores · contratos · soap · sql</text>
+        <text x="40" y="174" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">15 features funcionales · todos con @regression</text>
+        <text x="40" y="190" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">performance/: 4 features que solo usa Gatling</text>
+
+        <rect x="450" y="106" width="410" height="92" rx="10" fill="#f7efde" stroke="#c9a86a" stroke-width="2"/>
+        <text x="470" y="134" font-size="14" font-weight="700" fill="#8a6a2e" font-family="Inter,sans-serif">🗂️ Datos y esquemas</text>
+        <text x="470" y="155" font-size="12.5" fill="#2c3530" font-family="Inter,sans-serif">resources/data: JSON, CSV y XML (SOAP)</text>
+        <text x="470" y="174" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">common/schemas: usuario.json y errores esperados</text>
+        <text x="470" y="190" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">contracts/ (OpenAPI, WSDL) · sql/ (esquema y semilla)</text>
+
+        <!-- Capa 3: runner / common -->
+        <rect x="20" y="220" width="410" height="92" rx="10" fill="#e0f0e7" stroke="#2a9d6a" stroke-width="2"/>
+        <text x="40" y="248" font-size="14" font-weight="700" fill="#0d5d3a" font-family="Inter,sans-serif">▶️ ApiTestRunner + karate-config.js</text>
+        <text x="40" y="269" font-size="12.5" fill="#2c3530" font-family="Inter,sans-serif">JUnit 5 · parallel(1) · falla si hay escenarios fallidos</text>
+        <text x="40" y="288" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">baseUrl, timeouts y entorno (local / ci)</text>
+        <text x="40" y="304" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">Tags y rutas con -Dkarate.options</text>
+
+        <rect x="450" y="220" width="410" height="92" rx="10" fill="#f7efde" stroke="#c9a86a" stroke-width="2"/>
+        <text x="470" y="248" font-size="14" font-weight="700" fill="#8a6a2e" font-family="Inter,sans-serif">🔁 common/</text>
+        <text x="470" y="269" font-size="12.5" fill="#2c3530" font-family="Inter,sans-serif">reset.feature · login.feature · get-lento.feature</text>
+        <text x="470" y="288" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">campos-sensibles.js</text>
+        <text x="470" y="304" font-size="12.5" fill="#6b7770" font-family="Inter,sans-serif">@ignore: se usan con call / callonce</text>
+
+        <!-- Capa 4: soporte y performance -->
+        <rect x="20" y="334" width="840" height="64" rx="10" fill="#e0eaf3" stroke="#3a7bb5" stroke-width="2"/>
+        <text x="40" y="363" font-size="14" font-weight="700" fill="#1c4870" font-family="Inter,sans-serif">☕ soporte/ y performance/ (Java)</text>
+        <text x="40" y="383" font-size="13" fill="#2c3530" font-family="Inter,sans-serif">OpenApiContrato · XmlContrato · BaseDeDatos (H2) · UsuariosSimulation (Gatling) · MonitorRecursos</text>
+
+        <!-- Capa 5: mock -->
+        <rect x="20" y="420" width="840" height="64" rx="10" fill="#ece2f5" stroke="#6b3aa3" stroke-width="2"/>
+        <text x="40" y="449" font-size="14" font-weight="700" fill="#3e2061" font-family="Inter,sans-serif">🎭 Mockoon 9.10.0 · localhost:3001 (Desktop o CLI)</text>
+        <text x="40" y="469" font-size="13" fill="#2c3530" font-family="Inter,sans-serif">REST /api/usuarios · auth (Bearer, API Key) · /api/errores · ruta lenta · SOAP /soap/usuarios · data bucket compartido</text>
+
+        <!-- Capa 6: CI y reportes -->
+        <rect x="20" y="506" width="840" height="64" rx="10" fill="#fbe6dd" stroke="#d97757" stroke-width="2"/>
+        <text x="40" y="535" font-size="14" font-weight="700" fill="#8c2d20" font-family="Inter,sans-serif">🚀 Reportes y CI</text>
+        <text x="40" y="555" font-size="13" fill="#2c3530" font-family="Inter,sans-serif">target/ (karate-reports, karate.log, gatling) · GitHub Actions y Azure DevOps con Karate, Newman y Gatling</text>
+
+        <!-- Flechas -->
+        <line x1="440" y1="84" x2="225" y2="104" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="440" y1="84" x2="655" y2="104" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="225" y1="198" x2="225" y2="218" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="655" y1="198" x2="655" y2="218" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="225" y1="312" x2="300" y2="332" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="655" y1="312" x2="580" y2="332" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="440" y1="398" x2="440" y2="418" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="440" y1="484" x2="440" y2="504" stroke="#2a9d6a" stroke-width="2" marker-end="url(#arrow)"/>
+      </svg>
+      <p class="diagram-caption">Todas las solicitudes HTTP de las pruebas las hace Karate. Las clases Java validan o preparan datos; no llaman a la API.</p>
+    </div>
+
+    <div class="callout">
+      <strong>📌 La regla de oro:</strong> un caso negativo valida el código, el <code>Content-Type</code> y el cuerpo de
+      error completo. Un 422 con el mensaje equivocado es un defecto, aunque el status sea el correcto.
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 4. COBERTURA ═════════════ -->
+<section id="cobertura">
+  <div class="container">
+    <span class="kicker">04 · La cobertura</span>
+    <h2>15 features, 228 escenarios</h2>
+    <p class="lead">Los escenarios ejecutados incluyen las filas de cada <code>Scenario Outline</code>. Los tags agrupan por
+      tipo; <code>@smoke</code> marca el camino crítico y todos llevan <code>@regression</code>.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Carpeta</th><th>Features</th><th>Qué cubre</th><th>Tags principales</th></tr></thead>
+        <tbody>
+          <tr><td><code>health/</code></td><td>health</td><td>La API responde y está disponible</td><td><code>@smoke</code></td></tr>
+          <tr><td><code>usuarios/</code></td><td>get · post · put · patch · delete</td><td>CRUD completo, persistencia, caracteres especiales, 404, 422 con su mensaje y payloads malformados (400)</td><td><code>@smoke @negative</code></td></tr>
+          <tr><td><code>auth/</code></td><td>authentication · authorization · api-key</td><td>Login, Bearer token, API Key, 401 con <code>WWW-Authenticate</code>, 403 sin permisos, campos sensibles</td><td><code>@security @negative</code></td></tr>
+          <tr><td><code>errores/</code></td><td>http-errors · timeouts</td><td>12 códigos HTTP con su cuerpo, <code>Retry-After</code>, timeout del cliente frente a 504 y 524</td><td><code>@negative @timeout</code></td></tr>
+          <tr><td><code>contratos/</code></td><td>contracts · openapi</td><td>Estructura, tipos, cabeceras y tiempo de respuesta; cada respuesta contra <code>openapi.yaml</code></td><td><code>@contract</code></td></tr>
+          <tr><td><code>soap/</code></td><td>usuarios-soap</td><td>ObtenerUsuario y ListarUsuarios, XSD del WSDL, SOAP Fault, el WSDL servido y REST ↔ SOAP</td><td><code>@soap @contract</code></td></tr>
+          <tr><td><code>sql/</code></td><td>datos-sql</td><td>API contra tabla, JOIN, LEFT JOIN, agregaciones con HAVING, conciliación, integridad e inyección SQL</td><td><code>@sql</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="test-types">
+      <div class="test-card">
+        <span class="badge">@smoke</span>
+        <h3>🟢 Camino crítico</h3>
+        <p>Listar, obtener, crear, login con token, SOAP y la consistencia API–base. Es lo primero que se corre tras un cambio.</p>
+        <p class="ex"><code>.\mvnw.cmd test "-Dkarate.options=--tags @smoke"</code></p>
+      </div>
+      <div class="test-card api">
+        <span class="badge">@contract</span>
+        <h3>📜 Contratos</h3>
+        <p>OpenAPI para REST, XSD para SOAP y esquemas de Karate. Detecta cambios de la API que ningún caso revisa.</p>
+        <p class="ex">Validadores en <code>soporte/</code>; esperan <code>== []</code>.</p>
+      </div>
+      <div class="test-card data">
+        <span class="badge">@sql</span>
+        <h3>🗄️ Datos</h3>
+        <p>Preparar el dato con una consulta, consultarlo en la API y conciliar saldos de cuentas y movimientos.</p>
+        <p class="ex">H2 en memoria, modo PostgreSQL, recreada en cada escenario.</p>
+      </div>
+      <div class="test-card sec">
+        <span class="badge">@security</span>
+        <h3>🔐 Seguridad</h3>
+        <p>401 frente a 403, tokens con formato inválido, API Key rechazada y ningún campo sensible en las respuestas.</p>
+        <p class="ex">Tokens fijos de laboratorio (no JWT).</p>
+      </div>
+      <div class="test-card">
+        <span class="badge">@negative</span>
+        <h3>🚫 Negativos</h3>
+        <p>Datos inválidos desde JSON y CSV, payloads malformados enviados tal cual, recursos inexistentes y errores HTTP.</p>
+        <p class="ex">Cada negativo compara el cuerpo de error completo.</p>
+      </div>
+      <div class="test-card perf">
+        <span class="badge">performance/</span>
+        <h3>📈 Carga y estrés</h3>
+        <p>Consultas, login y SOAP como usuarios virtuales en Gatling, con SLA, TPS mínimo y monitoreo de recursos.</p>
+        <p class="ex">No los ejecuta <code>ApiTestRunner</code>: van con <code>gatling:test</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 5. DE PUNTA A PUNTA ═════════════ -->
+<section id="punta-a-punta" class="alt">
+  <div class="container">
+    <span class="kicker">05 · De punta a punta</span>
+    <h2>Qué pasa cuando se ejecuta un caso</h2>
+    <p class="lead">Dos casos reales, de menos a más: primero un <strong>GET</strong> con esquema; después un escenario de
+      <strong>SQL</strong> que prepara el dato en la base y lo verifica en la API.</p>
+
+    <h3 style="margin-top:8px;">1 · El caso más simple: listar los usuarios</h3>
+<pre class="cmd"><span class="c"># src/test/java/usuarios/get-usuarios.feature</span>
+<span class="k">@regression</span>
+<span class="k">Feature:</span> GET /api/usuarios
+
+  <span class="k">Background:</span>
+    * call read('classpath:common/reset.feature')
+    * url baseUrl
+    * def datos = read('classpath:data/usuarios.json')
+    * def esquemaUsuario = read('classpath:common/schemas/usuario.json')
+
+  <span class="k">@smoke</span>
+  <span class="k">Scenario:</span> Listar los usuarios iniciales
+    <span class="k">Given</span> path 'api', 'usuarios'
+    <span class="k">When</span> method get
+    <span class="k">Then</span> status 200
+    <span class="k">And</span> match header Content-Type contains 'application/json'
+    <span class="k">And</span> match each response == esquemaUsuario
+    <span class="k">And</span> match response[*].id == datos.existentes</pre>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Maven ejecuta el runner</h3>
+          <p>Surefire solo incluye <code>ApiTestRunner</code>; <code>-Dkarate.options</code> reemplaza sus rutas por este feature.
+            <code>karate-config.js</code> entrega <code>baseUrl</code> y los timeouts.</p>
+<pre class="cmd">.\mvnw.cmd test "-Dkarate.options=classpath:usuarios/get-usuarios.feature"</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Background: datos limpios</h3>
+          <p><code>reset.feature</code> envía <code>POST /api/test/reset</code> y valida <code>{ status: 'restablecido' }</code>:
+            el mock vuelve a los 3 usuarios iniciales. Después se leen los datos y el esquema.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>La solicitud</h3>
+          <p><code>path</code> y <code>method get</code> arman <code>GET http://localhost:3001/api/usuarios</code>. Karate guarda
+            <code>response</code>, <code>responseStatus</code>, las cabeceras y <code>responseTime</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Las validaciones</h3>
+          <p><code>match each</code> aplica el esquema a cada usuario; un campo de más o de otro tipo falla.
+            Luego compara la lista de ids con la esperada.</p>
+<pre class="cmd"><span class="c">// common/schemas/usuario.json</span>
+{ "id": "#number", "nombre": "#string",
+  "email": "#regex [^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+  "rol": "#regex (admin|supervisor|usuario)", "activo": "#boolean" }</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Resultado</h3>
+          <p>El paso queda en verde en <code>target/karate-reports/karate-summary.html</code>, y la solicitud y la respuesta
+            completas en <code>target/karate.log</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:34px;">2 · El siguiente nivel: preparar el dato con SQL y verificarlo en la API</h3>
+<pre class="cmd"><span class="c"># src/test/java/sql/datos-sql.feature</span>
+  <span class="k">Background:</span>
+    * call read('classpath:common/reset.feature')
+    * url baseUrl
+    * def db = Java.type('soporte.BaseDeDatos')
+    * db.inicializar()
+
+  <span class="k">Scenario:</span> Preparar datos con SQL: el usuario activo con mayor saldo total se consulta en la API
+    * text consulta =
+      """
+      SELECT u.id, u.nombre, SUM(c.saldo) AS saldo_total
+      FROM usuarios u
+      JOIN cuentas c ON c.usuario_id = u.id
+      WHERE u.activo = TRUE AND c.estado = 'activa'
+      GROUP BY u.id, u.nombre
+      ORDER BY saldo_total DESC
+      LIMIT 1
+      """
+    * def elegido = db.consultar(consulta)[0]
+    * match elegido.saldo_total == 4700.50
+
+    <span class="k">Given</span> path 'api', 'usuarios', elegido.id
+    <span class="k">When</span> method get
+    <span class="k">Then</span> status 200
+    <span class="k">And</span> match response.nombre == elegido.nombre</pre>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>La base se recrea</h3>
+          <p><code>db.inicializar()</code> ejecuta <code>sql/schema.sql</code> y <code>sql/datos.sql</code> en una H2 en memoria:
+            tablas <code>usuarios</code>, <code>cuentas</code> y <code>movimientos</code>, con los mismos usuarios que el mock.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>La consulta elige el dato</h3>
+          <p>JOIN entre usuarios y cuentas, filtro de activos, <code>SUM</code> por usuario, orden descendente y el primero.
+            <code>BaseDeDatos.consultar</code> devuelve filas como mapas, que Karate compara con <code>match</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>La API confirma</h3>
+          <p>Con el id elegido se consulta <code>GET /api/usuarios/{id}</code> y el nombre debe coincidir con el de la base.
+            Así se prueba que la API y los datos cuentan la misma historia.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Capa</th><th>Archivo</th><th>Responsabilidad</th></tr></thead>
+        <tbody>
+          <tr><td>Feature</td><td><code>get-usuarios.feature</code>, <code>datos-sql.feature</code></td><td><strong>Qué</strong> se prueba: la solicitud y la validación</td></tr>
+          <tr><td>Datos</td><td><code>data/usuarios.json</code>, <code>sql/datos.sql</code></td><td>Los valores de entrada y esperados, fuera del feature</td></tr>
+          <tr><td>Esquemas</td><td><code>common/schemas/</code></td><td>La forma esperada de un usuario y de cada error</td></tr>
+          <tr><td>Comunes</td><td><code>common/reset.feature</code>, <code>login.feature</code></td><td>Pasos repetidos: restablecer datos, obtener un token</td></tr>
+          <tr><td>Soporte</td><td><code>BaseDeDatos</code>, <code>OpenApiContrato</code>, <code>XmlContrato</code></td><td>Lo que Karate no trae: JDBC, OpenAPI y XSD</td></tr>
+          <tr><td>Runner</td><td><code>ApiTestRunner</code></td><td>Qué carpetas corren, con un hilo, y fallar el build si algo falla</td></tr>
+          <tr><td>Configuración</td><td><code>karate-config.js</code></td><td>URL, timeouts y entorno</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 6. FLUJO ═════════════ -->
+<section id="flujo">
+  <div class="container">
+    <span class="kicker">06 · El flujo</span>
+    <h2>Cómo se agrega un caso de prueba</h2>
+    <p class="lead">Un caso solo está terminado cuando corrió contra el mock, se vio en el log lo que se envió de verdad y,
+      si cambió la API, se actualizaron los contratos.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 940 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flujo para agregar un caso: elegir feature y tags, poner los datos en resources/data, escribir el escenario, ajustar el mock y los contratos si hace falta, ejecutar y revisar el log">
+        <defs>
+          <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L10,5 L0,10 z" fill="#0d5d3a"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="20" width="150" height="64" rx="10" fill="#fdeacf" stroke="#f08a3e" stroke-width="2"/>
+        <text x="95" y="46" text-anchor="middle" font-size="20" font-family="Inter,sans-serif">🏷️</text>
+        <text x="95" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="#b85f1c" font-family="Inter,sans-serif">Feature y tags</text>
+        <text x="95" y="79" text-anchor="middle" font-size="11" fill="#6b3919" font-family="Inter,sans-serif">@regression + tipo</text>
+
+        <rect x="206" y="20" width="150" height="64" rx="10" fill="#f7efde" stroke="#c9a86a" stroke-width="2"/>
+        <text x="281" y="46" text-anchor="middle" font-size="20" font-family="Inter,sans-serif">🗂️</text>
+        <text x="281" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="#8a6a2e" font-family="Inter,sans-serif">Datos</text>
+        <text x="281" y="79" text-anchor="middle" font-size="11" fill="#6b7770" font-family="Inter,sans-serif">resources/data</text>
+
+        <rect x="392" y="20" width="150" height="64" rx="10" fill="#e0f0e7" stroke="#2a9d6a" stroke-width="2"/>
+        <text x="467" y="46" text-anchor="middle" font-size="20" font-family="Inter,sans-serif">✍️</text>
+        <text x="467" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0d5d3a" font-family="Inter,sans-serif">Escenario</text>
+        <text x="467" y="79" text-anchor="middle" font-size="11" fill="#6b7770" font-family="Inter,sans-serif">status + cuerpo + esquema</text>
+
+        <rect x="578" y="20" width="150" height="64" rx="10" fill="#ece2f5" stroke="#6b3aa3" stroke-width="2"/>
+        <text x="653" y="46" text-anchor="middle" font-size="20" font-family="Inter,sans-serif">🎭</text>
+        <text x="653" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="#3e2061" font-family="Inter,sans-serif">Mock y contratos</text>
+        <text x="653" y="79" text-anchor="middle" font-size="11" fill="#6b7770" font-family="Inter,sans-serif">solo si cambian</text>
+
+        <rect x="764" y="20" width="156" height="64" rx="10" fill="#e0eaf3" stroke="#3a7bb5" stroke-width="2"/>
+        <text x="842" y="46" text-anchor="middle" font-size="20" font-family="Inter,sans-serif">▶️</text>
+        <text x="842" y="65" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1c4870" font-family="Inter,sans-serif">Ejecutar y revisar</text>
+        <text x="842" y="79" text-anchor="middle" font-size="11" fill="#6b7770" font-family="Inter,sans-serif">reporte y karate.log</text>
+
+        <line x1="170" y1="52" x2="206" y2="52" stroke="#0d5d3a" stroke-width="2" marker-end="url(#arrow2)"/>
+        <line x1="356" y1="52" x2="392" y2="52" stroke="#0d5d3a" stroke-width="2" marker-end="url(#arrow2)"/>
+        <line x1="542" y1="52" x2="578" y2="52" stroke="#0d5d3a" stroke-width="2" marker-end="url(#arrow2)"/>
+        <line x1="728" y1="52" x2="764" y2="52" stroke="#0d5d3a" stroke-width="2" marker-end="url(#arrow2)"/>
+
+        <!-- Bajo "Escenario" -->
+        <line x1="467" y1="84" x2="300" y2="116" stroke="#c79a3e" stroke-width="2" stroke-dasharray="4,4"/>
+        <rect x="20" y="116" width="522" height="94" rx="8" fill="#f6ecd4" stroke="#c79a3e" stroke-width="1.8"/>
+        <text x="40" y="138" font-size="12" font-weight="700" fill="#7a5a12" font-family="Inter,sans-serif">📄 Reglas del escenario:</text>
+        <text x="40" y="158" font-size="11.5" fill="#7a5a12" font-family="Inter,sans-serif">1. Si modifica datos: call reset.feature primero en el Background, antes de url baseUrl</text>
+        <text x="40" y="175" font-size="11.5" fill="#7a5a12" font-family="Inter,sans-serif">2. Negativos en Scenario Outline con Examples: | read('classpath:data/…') |</text>
+        <text x="40" y="192" font-size="11.5" fill="#7a5a12" font-family="Inter,sans-serif">3. Cabecera ausente = escenario sin paso header (null envía el texto "null")</text>
+
+        <!-- Bajo "Mock y contratos" -->
+        <line x1="653" y1="84" x2="700" y2="116" stroke="#6b3aa3" stroke-width="2" stroke-dasharray="4,4"/>
+        <rect x="560" y="116" width="360" height="94" rx="8" fill="#fff" stroke="#6b3aa3" stroke-width="1.5"/>
+        <text x="580" y="138" font-size="12" font-weight="700" fill="#3e2061" font-family="Inter,sans-serif">🎭 Si el caso necesita otra respuesta:</text>
+        <text x="580" y="158" font-size="11.5" fill="#2c3530" font-family="Inter,sans-serif">ruta o regla nueva en usuarios-api.json</text>
+        <text x="580" y="175" font-size="11.5" fill="#2c3530" font-family="Inter,sans-serif">→ mockoon-cli validate · revisar el orden de rutas</text>
+        <text x="580" y="192" font-size="11.5" fill="#2c3530" font-family="Inter,sans-serif">→ actualizar openapi.yaml o usuarios.wsdl</text>
+
+        <!-- Al final -->
+        <rect x="20" y="236" width="900" height="84" rx="10" fill="#e0f0e7" stroke="#2a9d6a" stroke-width="2"/>
+        <text x="470" y="262" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0d5d3a" font-family="Inter,sans-serif">✅ Terminado cuando: el escenario pasa solo y dentro de la suite completa, y el log muestra lo que se quería enviar</text>
+        <text x="470" y="284" text-anchor="middle" font-size="11.5" fill="#2c3530" font-family="Inter,sans-serif">Una carpeta nueva de features se agrega a FEATURES_FUNCIONALES en ApiTestRunner, o no se ejecuta</text>
+        <text x="470" y="302" text-anchor="middle" font-size="11.5" fill="#2c3530" font-family="Inter,sans-serif">Sin esperas fijas: la lentitud la pone el mock, no Thread.sleep ni karate.pause</text>
+      </svg>
+      <p class="diagram-caption">El mock, los contratos y los datos se cambian juntos: si uno queda desfasado, los escenarios de contrato lo detectan.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 7. CUANDO ALGO FALLA ═════════════ -->
+<section id="fallos" class="alt">
+  <div class="container">
+    <span class="kicker">07 · Cuando algo falla</span>
+    <h2>¿Falló la API, la prueba o el entorno?</h2>
+    <p class="lead">Antes de tocar el código, la evidencia (reporte, <code>karate.log</code> y log del mock) dice cuál de las
+      tres causas es.</p>
+
+    <div class="grid grid-3">
+      <div class="card green">
+        <span class="icon">🔧</span>
+        <h3>Fallo técnico → se corrige la prueba</h3>
+        <p>Un dato desactualizado, un esquema que no se ajustó o un escenario que olvidó el reset.
+          <strong>La API está bien; la prueba quedó desactualizada.</strong></p>
+      </div>
+      <div class="card naranja">
+        <span class="icon">🐞</span>
+        <h3>Fallo funcional → defecto de la API</h3>
+        <p>Un status distinto, un mensaje de error equivocado, un campo de más o una respuesta fuera del contrato.
+          <strong>La prueba está bien; el servicio no.</strong> Se reporta el defecto.</p>
+      </div>
+      <div class="card coral">
+        <span class="icon">🔌</span>
+        <h3>Fallo de entorno → se revisa el mock</h3>
+        <p>Mockoon detenido, Desktop y CLI peleando el puerto 3001, o un archivo de mock editado sin recargar.
+          Se arregla el entorno y se repite.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>⚖️ La regla que no se negocia:</strong> el caso es el criterio de verdad. Si la API no cumple el contrato o
+      el mensaje esperado, el caso <strong>debe</strong> fallar. No se relaja un <code>match</code> para dejar en verde algo que el servicio no cumple.
+    </div>
+
+    <h3 style="margin-top:34px;">Cómo revisar una falla</h3>
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Leer el reporte</h3>
+          <p><code>target/karate-reports/karate-summary.html</code> marca el paso en rojo. El mensaje de <code>match</code> indica
+            la ruta del JSON (o el XPath) y el valor esperado frente al recibido.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Ver lo que se envió de verdad</h3>
+          <p><code>target/karate.log</code> tiene la solicitud y la respuesta completas. Así se descubrió que
+            <code>header X = null</code> envía el texto <code>null</code> y que un cuerpo vacío sale con <code>Content-Length: 0</code>.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Mirar el mock</h3>
+          <p>En Mockoon Desktop, la pestaña Logs del entorno; con la CLI, <code>--log-transaction</code>. Si el mock no
+            responde, el escenario falla en el primer paso (normalmente el reset).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Reproducir aislado</h3>
+          <p>Un solo feature con <code>-Dkarate.options=classpath:…</code>, o la solicitud a mano con <code>curl.exe</code>.
+            Si pasa sola y falla en la suite, el problema son los datos compartidos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 8. COMANDOS ═════════════ -->
+<section id="comandos">
+  <div class="container">
+    <span class="kicker">08 · La caja de herramientas</span>
+    <h2>Los comandos de uso más frecuente</h2>
+    <p class="lead">Desde la raíz del proyecto, en PowerShell, con Mockoon corriendo. Cada argumento <code>-D…</code> va
+      completo entre comillas dobles.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Comando</th><th>¿Para qué?</th><th>¿Cuándo lo uso?</th></tr></thead>
+        <tbody>
+          <tr><td><code>npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction</code></td><td>Levanta el mock en el puerto 3001</td><td>Antes de cualquier corrida (otra terminal), si no se usa Desktop</td></tr>
+          <tr><td><code>npx.cmd @mockoon/cli@9.10.0 validate --data .\mocks\usuarios-api.json</code></td><td>Valida el archivo del mock</td><td>Después de editar el mock</td></tr>
+          <tr><td><code>.\mvnw.cmd test</code></td><td>Suite completa (228 escenarios)</td><td>Regresión antes de un commit (≈45 s)</td></tr>
+          <tr><td><code>.\mvnw.cmd test "-Dkarate.options=--tags @smoke"</code></td><td>Solo el camino crítico</td><td>Verificación rápida</td></tr>
+          <tr><td><code>.\mvnw.cmd test "-Dkarate.options=--tags ~@timeout"</code></td><td>Todo menos las pruebas lentas</td><td>Mientras se desarrolla</td></tr>
+          <tr><td><code>.\mvnw.cmd test "-Dkarate.options=classpath:usuarios/post-usuarios.feature"</code></td><td>Un solo feature</td><td>Al trabajar sobre un caso puntual</td></tr>
+          <tr><td><code>.\mvnw.cmd test "-Dkarate.env=ci"</code></td><td>Entorno de CI (log más corto)</td><td>Reproducir lo que hace el pipeline</td></tr>
+          <tr><td><code>.\mvnw.cmd test "-DbaseUrl=http://localhost:3002"</code></td><td>Apuntar a otro puerto</td><td>Si Desktop ocupa el 3001 y la CLI corre en el 3002</td></tr>
+          <tr><td><code>.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"</code></td><td>Carga con SLA (o <code>estres</code>)</td><td>Pruebas de rendimiento (40 s o 60 s)</td></tr>
+          <tr><td><code>node scripts\resumen-performance.mjs</code></td><td>TPS, latencias, recursos y hallazgos</td><td>Después de una corrida de Gatling</td></tr>
+          <tr><td><code>npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json</code></td><td>La colección de Postman</td><td>Verificar la colección o mostrarla en una demo</td></tr>
+          <tr><td><code>curl.exe "http://localhost:3001/soap/usuarios?wsdl"</code></td><td>Una solicitud a mano</td><td>Reproducir un fallo fuera de la suite</td></tr>
+          <tr><td><code>Start-Process .\target\karate-reports\karate-summary.html</code></td><td>Abre el reporte</td><td>Después de cada corrida</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:18px; color: var(--muted); font-size: 14px;">📚 Valores por defecto en <code>src/test/java/karate-config.js</code>; <code>-DbaseUrl</code> y <code>-Dkarate.env</code> los cambian.</p>
+  </div>
+</section>
+
+<!-- ═════════════ 9. PRIMER CICLO ═════════════ -->
+<section id="empezar" class="alt">
+  <div class="container">
+    <span class="kicker">09 · El primer paso</span>
+    <h2>El primer ciclo en 4 pasos</h2>
+    <p class="lead">El camino mínimo para clonar el proyecto y ver la suite pasar.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Requisitos</h3>
+          <p>JDK 21 y Node.js. Maven no hace falta: el wrapper descarga Maven 3.9.9 la primera vez.</p>
+<pre class="cmd">java -version
+node -v
+.\mvnw.cmd -v</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Levantar el mock</h3>
+          <p>Con Mockoon Desktop (abrir <code>mocks/usuarios-api.json</code> y Start) o con la CLI en otra terminal.
+            Nunca los dos en el mismo puerto.</p>
+<pre class="cmd">npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Comprobar que responde</h3>
+<pre class="cmd">curl.exe http://localhost:3001/api/health</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Ejecutar y abrir el reporte</h3>
+<pre class="cmd">.\mvnw.cmd test "-Dkarate.options=--tags @smoke"
+Start-Process .\target\karate-reports\karate-summary.html</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>💡 Tip:</strong> para entender un caso, ejecútalo solo y abre <code>target/karate.log</code> al lado del
+      <code>.feature</code>: cada paso <code>method</code> corresponde a una solicitud y una respuesta en el log.
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 10. ESTADO ═════════════ -->
+<section id="estado">
+  <div class="container">
+    <span class="kicker">10 · El estado</span>
+    <h2>Qué está hecho y qué falta</h2>
+    <p class="lead">Ejecuciones del 11 de noviembre de 2026 en Windows 11, Java 21 y Mockoon CLI 9.10.0 en el puerto 3001.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Capacidad</th><th>Estado</th><th>Detalle</th></tr></thead>
+        <tbody>
+          <tr><td>Suite Karate completa</td><td><span class="badge">228/228</span></td><td class="n">15 features; el runner tardó 42,4 s, incluidos los escenarios <code>@timeout</code> de 15 s</td></tr>
+          <tr><td>Suite sin <code>@timeout</code></td><td><span class="badge">223/223</span></td><td class="n">Runner en 22,5 s</td></tr>
+          <tr><td>Postman con Newman</td><td><span class="badge">45/45</span></td><td class="n">14 solicitudes y 45 aserciones, sin fallos; tiempo medio de respuesta 35 ms</td></tr>
+          <tr><td>Gatling, perfil carga</td><td><span class="badge">7/7 SLA</span></td><td class="n">1.950 solicitudes, 48,75 TPS, p95 30 ms, p99 32 ms, 0 errores</td></tr>
+          <tr><td>Gatling, perfil estrés</td><td><span class="badge">LISTO</span></td><td class="n">9.570 solicitudes, 162,2 TPS, 0 errores; el CPU del mock crece con cada escalón (hallazgo documentado)</td></tr>
+          <tr><td>Contratos OpenAPI y WSDL/XSD</td><td><span class="badge">LISTO</span></td><td>Incluidos en la suite completa (<code>@contract</code>)</td></tr>
+          <tr><td>SQL (H2)</td><td><span class="badge">LISTO</span></td><td>JOIN, LEFT JOIN, agregaciones, conciliación, integridad e inyección</td></tr>
+          <tr><td>CI: GitHub Actions y Azure DevOps</td><td><span class="badge wip">PARCIAL</span></td><td>Pipelines escritos y equivalentes; los pasos nuevos de performance aún no se ejecutaron en un agente</td></tr>
+          <tr><td>Monitoreo con Instana</td><td><span class="badge wip">EQUIVALENTE</span></td><td>Métricas propias (<code>MonitorRecursos</code>) y la guía <code>docs/monitoreo-instana.md</code>; Instana no se puede ejecutar en local</td></tr>
+          <tr><td>Azure Boards</td><td><span class="badge no">NO EXISTE</span></td><td>Pendiente documentar work items y su vínculo con commits y PR</td></tr>
+          <tr><td>k6 o JMeter, Docker, WireMock</td><td><span class="badge no">NO EXISTE</span></td><td>Deseables del aviso; Podman está instalado en este equipo</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <strong>🧭 Lo que sigue:</strong> documentar Azure Boards y un informe de resultados, agregar un endpoint bancario
+      (transferencias con reglas de negocio) y luego WireMock en contenedor y un script k6 para comparar con Gatling.
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ 11. PROFUNDIZAR ═════════════ -->
+<section id="profundizar" class="alt">
+  <div class="container">
+    <span class="kicker">11 · Para profundizar</span>
+    <h2>Dónde leer más</h2>
+    <p class="lead">Esta guía entrega el concepto. Para el detalle técnico, estos son los archivos clave del repositorio:</p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <span class="icon">📘</span>
+        <h3>README.md</h3>
+        <p>Instalación, endpoints, autenticación, SOAP, contratos, ejecución, performance, reportes y la comparativa con la POC de Playwright.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🧭</span>
+        <h3>CLAUDE.md</h3>
+        <p>Arquitectura y convenciones, más los detalles no evidentes de Karate y del mock (prefijos SOAP, <code>header = null</code>, orden de rutas).</p>
+      </div>
+      <div class="card">
+        <span class="icon">🏛️</span>
+        <h3><a href="arquitectura.html">arquitectura.html</a></h3>
+        <p>Diagrama interactivo por etapas con recorridos paso a paso, la cobertura del aviso, patrones, decisiones técnicas y preguntas de entrevista.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📈</span>
+        <h3>docs/monitoreo-instana.md</h3>
+        <p>Qué mide cada lado (Gatling y un APM), cómo detectar un cuello de botella y el flujo de trabajo con Instana.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🌿</span>
+        <h3>docs/branching-strategy.md</h3>
+        <p>Ramas, commits, pull requests, revisión de código, resolución de conflictos y protección de <code>main</code>.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📋</span>
+        <h3>src/test/java/</h3>
+        <p>Los features por carpeta. Son la mejor documentación funcional de lo que se prueba.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ FOOTER ═════════════ -->
+<footer>
+  <div class="container">
+    <p style="font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 16px; opacity: 0.92; margin-bottom: 14px;">«Validar el status no basta: <strong style="color: var(--naranja-soft); font-style: normal;">contrato, datos y tiempo en cada push</strong>.»</p>
+    <p><strong>🔌 POC API REST y SOAP con Karate + Mockoon</strong> · <code>poc_api_rest_karate_mockoon</code> · Noviembre 2026</p>
+    <p style="margin-top: 8px; opacity: 0.85;">Karate 1.5.2 · Mockoon 9.10.0 · Java 21 · Maven 3.9.9 · Gatling 3.11.5 · H2 2.5.252 · openapi-request-validator 3.0.0 · Newman 6.2.3</p>
+  </div>
+</footer>
+
+</body>
+</html>
