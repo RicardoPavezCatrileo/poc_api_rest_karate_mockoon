@@ -1,0 +1,5 @@
+{
+  "codigo": "#number",
+  "error": "#string",
+  "mensaje": "#string"
+}
