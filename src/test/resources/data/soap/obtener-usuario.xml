@@ -1,0 +1,8 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:usu="http://poc.qa/usuarios">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <usu:ObtenerUsuario>
+      <usu:id>#(usuarioId)</usu:id>
+    </usu:ObtenerUsuario>
+  </soapenv:Body>
+</soapenv:Envelope>

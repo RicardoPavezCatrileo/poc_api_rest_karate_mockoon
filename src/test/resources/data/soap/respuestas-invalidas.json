@@ -1,0 +1,26 @@
+[
+  {
+    "caso": "rol-desconocido",
+    "xml": "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:usu='http://poc.qa/usuarios'><soapenv:Body><usu:ObtenerUsuarioResponse><usu:usuario><usu:id>1</usu:id><usu:nombre>Ana</usu:nombre><usu:email>ana@example.com</usu:email><usu:rol>root</usu:rol><usu:activo>true</usu:activo></usu:usuario></usu:ObtenerUsuarioResponse></soapenv:Body></soapenv:Envelope>"
+  },
+  {
+    "caso": "email-invalido",
+    "xml": "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:usu='http://poc.qa/usuarios'><soapenv:Body><usu:ObtenerUsuarioResponse><usu:usuario><usu:id>1</usu:id><usu:nombre>Ana</usu:nombre><usu:email>ana@</usu:email><usu:rol>admin</usu:rol><usu:activo>true</usu:activo></usu:usuario></usu:ObtenerUsuarioResponse></soapenv:Body></soapenv:Envelope>"
+  },
+  {
+    "caso": "id-no-numerico",
+    "xml": "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:usu='http://poc.qa/usuarios'><soapenv:Body><usu:ObtenerUsuarioResponse><usu:usuario><usu:id>uno</usu:id><usu:nombre>Ana</usu:nombre><usu:email>ana@example.com</usu:email><usu:rol>admin</usu:rol><usu:activo>true</usu:activo></usu:usuario></usu:ObtenerUsuarioResponse></soapenv:Body></soapenv:Envelope>"
+  },
+  {
+    "caso": "campo-faltante",
+    "xml": "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:usu='http://poc.qa/usuarios'><soapenv:Body><usu:ObtenerUsuarioResponse><usu:usuario><usu:id>1</usu:id><usu:nombre>Ana</usu:nombre><usu:rol>admin</usu:rol><usu:activo>true</usu:activo></usu:usuario></usu:ObtenerUsuarioResponse></soapenv:Body></soapenv:Envelope>"
+  },
+  {
+    "caso": "activo-no-booleano",
+    "xml": "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:usu='http://poc.qa/usuarios'><soapenv:Body><usu:ObtenerUsuarioResponse><usu:usuario><usu:id>1</usu:id><usu:nombre>Ana</usu:nombre><usu:email>ana@example.com</usu:email><usu:rol>admin</usu:rol><usu:activo>si</usu:activo></usu:usuario></usu:ObtenerUsuarioResponse></soapenv:Body></soapenv:Envelope>"
+  },
+  {
+    "caso": "sin-namespace",
+    "xml": "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/'><soapenv:Body><ObtenerUsuarioResponse><usuario><id>1</id></usuario></ObtenerUsuarioResponse></soapenv:Body></soapenv:Envelope>"
+  }
+]

@@ -18,6 +18,9 @@
     <!-- DEBUG registra cada solicitud y respuesta HTTP en target/karate.log -->
     <logger name="com.intuit.karate" level="DEBUG"/>
 
+    <!-- json-schema-validator avisa por cada palabra clave de OpenAPI que no es de JSON Schema (components) -->
+    <logger name="com.networknt" level="ERROR"/>
+
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
