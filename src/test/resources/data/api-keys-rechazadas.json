@@ -1,0 +1,5 @@
+[
+  { "caso": "incorrecta", "apiKey": "api-key-falsa" },
+  { "caso": "otras-mayusculas", "apiKey": "DEMO-API-KEY-123" },
+  { "caso": "vacia", "apiKey": "" }
+]

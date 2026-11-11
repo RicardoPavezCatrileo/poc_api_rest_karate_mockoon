@@ -1,0 +1,9 @@
+[
+  { "caso": "password-incorrecta", "credenciales": { "username": "qa_user", "password": "otra" } },
+  { "caso": "usuario-desconocido", "credenciales": { "username": "desconocido", "password": "demo123" } },
+  { "caso": "usuario-con-otras-mayusculas", "credenciales": { "username": "QA_USER", "password": "demo123" } },
+  { "caso": "sin-password", "credenciales": { "username": "qa_user" } },
+  { "caso": "sin-username", "credenciales": { "password": "demo123" } },
+  { "caso": "password-vacia", "credenciales": { "username": "qa_user", "password": "" } },
+  { "caso": "cuerpo-vacio", "credenciales": {} }
+]

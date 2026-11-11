@@ -1,0 +1,10 @@
+[
+  { "caso": "token-desconocido", "authorization": "Bearer token-falso" },
+  { "caso": "token-con-otras-mayusculas", "authorization": "Bearer TOKEN-DEMO-12345" },
+  { "caso": "token-truncado", "authorization": "Bearer token-demo-1234" },
+  { "caso": "formato-sin-esquema", "authorization": "token-demo-12345" },
+  { "caso": "formato-otro-esquema", "authorization": "Basic token-demo-12345" },
+  { "caso": "formato-esquema-sin-token", "authorization": "Bearer" },
+  { "caso": "formato-contenido-adicional", "authorization": "Bearer token-demo-12345 adicional" },
+  { "caso": "formato-cabecera-vacia", "authorization": "" }
+]
