@@ -1,0 +1,381 @@
+openapi: 3.0.3
+info:
+  title: Usuarios API (laboratorio)
+  version: 1.0.0
+  description: >
+    Contrato de la API REST simulada en mocks/usuarios-api.json. Las credenciales, tokens y API Keys
+    son ficticios y exclusivamente de laboratorio. Los tokens son cadenas fijas, no JWT.
+servers:
+  - url: http://localhost:3001
+
+tags:
+  - name: Salud
+  - name: Usuarios
+  - name: Autenticación
+  - name: Errores
+
+paths:
+  /api/health:
+    get:
+      tags: [Salud]
+      summary: Estado del servicio
+      responses:
+        "200":
+          description: Servicio disponible
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+
+  /api/test/reset:
+    post:
+      tags: [Salud]
+      summary: Restablece los usuarios (solo laboratorio)
+      responses:
+        "200":
+          description: Datos restablecidos
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    enum: [restablecido]
+
+  /api/usuarios:
+    get:
+      tags: [Usuarios]
+      summary: Lista los usuarios
+      responses:
+        "200":
+          description: Usuarios actuales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Usuario"
+    post:
+      tags: [Usuarios]
+      summary: Crea un usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioEntrada"
+      responses:
+        "201":
+          $ref: "#/components/responses/Usuario"
+        "400":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+
+  /api/usuarios/lento:
+    get:
+      tags: [Usuarios]
+      summary: Respuesta con retardo de 15 segundos
+      responses:
+        "200":
+          description: Respuesta lenta simulada
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [mensaje, retardo_ms]
+                properties:
+                  mensaje:
+                    type: string
+                  retardo_ms:
+                    type: integer
+
+  /api/usuarios/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Usuarios]
+      summary: Obtiene un usuario
+      responses:
+        "200":
+          $ref: "#/components/responses/Usuario"
+        "404":
+          $ref: "#/components/responses/Error"
+    put:
+      tags: [Usuarios]
+      summary: Reemplaza un usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioEntrada"
+      responses:
+        "200":
+          $ref: "#/components/responses/Usuario"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Usuarios]
+      summary: Actualiza parcialmente un usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioParcial"
+      responses:
+        "200":
+          $ref: "#/components/responses/Usuario"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+    delete:
+      tags: [Usuarios]
+      summary: Elimina un usuario
+      responses:
+        "204":
+          description: Eliminado, sin cuerpo
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Obtiene un token Bearer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Credenciales correctas
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [access_token, token_type]
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    enum: [Bearer]
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/secure/usuarios:
+    get:
+      tags: [Autenticación]
+      summary: Lista los usuarios con token Bearer
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/ListaUsuarios"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/Error"
+
+  /api/apikey/usuarios:
+    get:
+      tags: [Autenticación]
+      summary: Lista los usuarios con API Key
+      security:
+        - apiKeyAuth: []
+      responses:
+        "200":
+          $ref: "#/components/responses/ListaUsuarios"
+        "401":
+          $ref: "#/components/responses/Error"
+
+  /api/errores/{codigo}:
+    get:
+      tags: [Errores]
+      summary: Simula una respuesta de error
+      description: El 524 es un código propio de Cloudflare; aquí solo se simula la respuesta.
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: integer
+            enum: [400, 401, 403, 404, 409, 422, 429, 500, 502, 503, 504, 524]
+      responses:
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+        "429":
+          $ref: "#/components/responses/ConReintento"
+        "500":
+          $ref: "#/components/responses/Error"
+        "502":
+          $ref: "#/components/responses/Error"
+        "503":
+          $ref: "#/components/responses/ConReintento"
+        "504":
+          $ref: "#/components/responses/Error"
+        "524":
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Rol:
+      type: string
+      enum: [admin, supervisor, usuario]
+
+    Usuario:
+      type: object
+      additionalProperties: false
+      required: [id, nombre, email, rol, activo]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+          pattern: '\S'
+        email:
+          type: string
+          pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+        rol:
+          $ref: "#/components/schemas/Rol"
+        activo:
+          type: boolean
+
+    UsuarioEntrada:
+      type: object
+      additionalProperties: false
+      required: [nombre, email, rol, activo]
+      properties:
+        nombre:
+          type: string
+          pattern: '\S'
+        email:
+          type: string
+          pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+        rol:
+          $ref: "#/components/schemas/Rol"
+        activo:
+          type: boolean
+
+    UsuarioParcial:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        nombre:
+          type: string
+          pattern: '\S'
+        email:
+          type: string
+          pattern: '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+        rol:
+          $ref: "#/components/schemas/Rol"
+        activo:
+          type: boolean
+
+    Error:
+      type: object
+      additionalProperties: false
+      required: [codigo, error, mensaje]
+      properties:
+        codigo:
+          type: integer
+        error:
+          type: string
+        mensaje:
+          type: string
+
+  responses:
+    Usuario:
+      description: Un usuario
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Usuario"
+    ListaUsuarios:
+      description: Usuarios actuales
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/Usuario"
+    Error:
+      description: Error con código, nombre y mensaje
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NoAutenticado:
+      description: No se sabe quién llama
+      headers:
+        WWW-Authenticate:
+          required: true
+          schema:
+            type: string
+            enum: [Bearer]
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ConReintento:
+      description: Error que indica cuándo reintentar
+      headers:
+        Retry-After:
+          required: true
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

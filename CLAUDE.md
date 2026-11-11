@@ -16,7 +16,7 @@ Requieren Mockoon en marcha, Desktop o CLI, nunca ambos en el mismo puerto.
 npx.cmd @mockoon/cli@9.10.0 validate --data .\mocks\usuarios-api.json
 npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction   # Terminal aparte
 .\mvnw.cmd test
-.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @timeout
+.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @timeout
 .\mvnw.cmd test "-Dkarate.options=--tags ~@timeout"    # Omite las pruebas lentas
 .\mvnw.cmd test "-Dkarate.options=classpath:usuarios/get-usuarios.feature"   # Un solo feature
 .\mvnw.cmd test "-Dkarate.env=ci"
@@ -32,6 +32,7 @@ En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HT
 - Los `.feature`, `karate-config.js` y `logback-test.xml` viven en `src/test/java` (el `pom.xml` los copia como recursos de prueba). Los datos de prueba van en `src/test/resources/data`, fuera de los `.feature`.
 - `health/health.feature` no está en la estructura de la especificación: se agregó porque el health check no pertenece a `usuarios/` ni a `contratos/`.
 - `common/` contiene features reutilizables (`reset.feature`, `login.feature`) y esquemas (`common/schemas/`). Llevan `@ignore` para que el Runner no los ejecute solos; se invocan con `call` o `callonce`.
+- `soporte/` (Java) valida contratos sin hacer solicitudes: `OpenApiContrato` contra `src/test/resources/contracts/openapi.yaml` (librería `openapi-request-validator-core`) y `XmlContrato` contra el XSD incluido en `contracts/usuarios.wsdl` (APIs XML del JDK). Ambos devuelven una lista de errores; en Karate se usa `match ... == []`. Al cambiar el mock, actualizar también estos contratos.
 - `karate-config.js` centraliza `baseUrl`, timeouts y `maxResponseTimeMs`. Acepta `karate.env` `local` (por defecto) o `ci`; cualquier otro valor falla.
 
 ## Restricciones
@@ -64,3 +65,6 @@ En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HT
 - `/api/usuarios/lento` tarda 15 s (`latency` y `retardo_ms` en el mock); debe coincidir con `timeouts.slowDelayMs` de `karate-config.js`.
 - 401 incluye `WWW-Authenticate: Bearer`; 403 es token válido sin permisos (`qa_sin_permisos`). Los tokens son cadenas fijas, no JWT.
 - 524 es un código específico de Cloudflare; Mockoon solo simula la respuesta.
+- SOAP (`POST /soap/usuarios`): Mockoon convierte el XML en un objeto con los prefijos en las claves y el texto en `_text`, así que las reglas y plantillas usan `soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id._text`. Solo funcionan los prefijos `soapenv` y `usu`. Comparte el data bucket `usuarios` con REST. Los errores son SOAP Fault con HTTP 500.
+- `GET /soap/usuarios?wsdl` sirve una copia inline de `contracts/usuarios.wsdl`; un escenario comprueba que coinciden. Si se edita el WSDL, actualizar también el cuerpo de esa ruta en el mock.
+- En Karate, XPath ignora los prefijos de namespace (`/Envelope/Body/...`); con prefijos devuelve `#notpresent`. `count()` en XPath devolvió 0: contar con el largo de la lista.

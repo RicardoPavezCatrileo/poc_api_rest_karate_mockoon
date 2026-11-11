@@ -1,13 +1,14 @@
 # POC API REST con Karate DSL y Mockoon
 
-Prueba de concepto educativa de automatización de pruebas de API REST con Karate DSL, contra una API de usuarios simulada con Mockoon. Es la contraparte de [poc_api_rest_playwright_mockoon](https://github.com/RicardoPavezCatrileo/poc_api_rest_playwright_mockoon) (Python, Playwright y Pytest): ambas prueban el mismo mock y se comparan caso por caso al final de este documento.
+Prueba de concepto de automatización de pruebas de servicios backend con Karate DSL: una API REST y un servicio SOAP de usuarios simulados con Mockoon, con validación de contratos OpenAPI y WSDL/XSD. Nació como contraparte de [poc_api_rest_playwright_mockoon](https://github.com/RicardoPavezCatrileo/poc_api_rest_playwright_mockoon) (Python, Playwright y Pytest), que prueba la misma API REST; al final de este documento se comparan caso por caso. El mock de esta POC se extendió con el servicio SOAP, que no existe en la otra.
 
 Todas las credenciales, tokens y API Keys de este repositorio son ficticios y exclusivamente de laboratorio.
 
 ## Objetivos
 
-- Automatizar pruebas de servicios REST con features reutilizables, `Scenario Outline` y datos externos.
+- Automatizar pruebas de servicios REST y SOAP con features reutilizables, `Scenario Outline` y datos externos.
 - Validar flujos CRUD, autenticación, autorización, errores HTTP, timeouts y contratos de respuesta.
+- Validar las respuestas contra contratos formales: OpenAPI 3 para REST y el XML Schema del WSDL para SOAP.
 - Distinguir un timeout del cliente de una respuesta HTTP 504 o 524.
 - Ejecutar la misma suite en local, con Mockoon Desktop, y en GitHub Actions, con Mockoon CLI.
 - Documentar una estrategia de ramas para trabajar en equipo.
@@ -17,13 +18,15 @@ Todas las credenciales, tokens y API Keys de este repositorio son ficticios y ex
 ```mermaid
 flowchart LR
     subgraph Pruebas
-        R[ApiTestRunner.java<br/>JUnit 5, un hilo] --> F[features<br/>usuarios, auth, errores, contratos]
+        R[ApiTestRunner.java<br/>JUnit 5, un hilo] --> F[features<br/>usuarios, auth, errores,<br/>contratos, soap]
         F --> K[karate-config.js<br/>URL, timeouts, entorno]
         F --> C[common/<br/>reset, login, get-lento]
         F --> S[common/schemas<br/>esquemas y errores esperados]
-        F --> D[resources/data<br/>JSON y CSV]
+        F --> D[resources/data<br/>JSON, CSV y XML]
+        F --> V[soporte/<br/>OpenApiContrato, XmlContrato]
+        V --> CT[resources/contracts<br/>openapi.yaml, usuarios.wsdl]
     end
-    F -->|HTTP| M[Mockoon<br/>localhost:3001]
+    F -->|REST JSON y SOAP XML| M[Mockoon<br/>localhost:3001]
     E[mocks/usuarios-api.json] --> M
     DK[Mockoon Desktop<br/>desarrollo local] -.-> M
     CL[Mockoon CLI<br/>terminal y CI] -.-> M
@@ -37,14 +40,17 @@ flowchart LR
 .github/pull_request_template.md  Plantilla de pull request
 .vscode/settings.json             Configuración de Visual Studio Code
 docs/branching-strategy.md        Estrategia de ramas
-mocks/usuarios-api.json           Entorno de Mockoon (copia exacta del de la POC de Playwright)
+mocks/usuarios-api.json           Entorno de Mockoon: API REST y servicio SOAP
 src/test/java/
   ApiTestRunner.java              Punto de entrada único de la suite
   karate-config.js                URL base, timeouts y entornos local y ci
   logback-test.xml                Log HTTP en target/karate.log
   common/                         Features reutilizables (@ignore), esquemas y campos-sensibles.js
-  health/ usuarios/ auth/ errores/ contratos/   Features
-src/test/resources/data/          Datos de prueba en JSON y CSV
+  soporte/                        Validadores de contrato en Java: OpenAPI y XSD del WSDL
+  health/ usuarios/ auth/ errores/ contratos/ soap/   Features
+src/test/resources/
+  contracts/                      openapi.yaml y usuarios.wsdl
+  data/                           Datos de prueba en JSON y CSV; data/soap/ con los mensajes XML
 ```
 
 Cambios respecto de la estructura inicial, con su motivo:
@@ -52,6 +58,7 @@ Cambios respecto de la estructura inicial, con su motivo:
 - `health/health.feature`: el health check no pertenece a `usuarios/` ni a `contratos/`.
 - `common/get-lento.feature`: aísla la llamada con timeout corto para capturar el error (ver [Timeouts](#timeouts)).
 - `common/campos-sensibles.js`: busca campos sensibles sin distinguir mayúsculas y en objetos anidados, algo que un esquema `#notpresent` no hace.
+- `soap/`, `soporte/` y `src/test/resources/contracts/`: servicio SOAP y contratos formales, agregados para cubrir pruebas SOAP, WSDL/XSD y OpenAPI.
 
 ### Ejecución en un solo hilo
 
@@ -66,6 +73,8 @@ Versiones verificadas en Maven Central y GitHub el 2026-11-10.
 | Java (JDK) | Lenguaje y ejecución | 21 (probado con 21.0.1) |
 | Maven | Build | 3.9.9, mediante Maven Wrapper 3.3.4 |
 | Karate (`io.karatelabs:karate-junit5`) | Pruebas de API | 1.5.2 |
+| `com.atlassian.oai:openapi-request-validator-core` | Validación de respuestas contra OpenAPI (no hace solicitudes) | 3.0.0 |
+| APIs XML del JDK (`javax.xml.validation`) | Validación de mensajes SOAP contra el XSD del WSDL | Incluidas en Java 21 |
 | maven-surefire-plugin | Ejecución de pruebas | 3.6.1 |
 | maven-compiler-plugin | Compilación | 3.16.0 |
 | Mockoon Desktop | Mock local con visualización de solicitudes | Probado con 9.10.0 |
@@ -122,8 +131,12 @@ El entorno `ci` desactiva el formato legible de solicitudes y respuestas en el l
 | GET | `/api/apikey/usuarios` | 200, 401 | Requiere `X-API-Key` |
 | GET | `/api/errores/{codigo}` | El indicado | 400, 401, 403, 404, 409, 422, 429, 500, 502, 503, 504 y 524 |
 | POST | `/api/test/reset` | 200 | Solo para laboratorio: restablece los usuarios |
+| POST | `/soap/usuarios` | 200, 500 | Servicio SOAP 1.1: `ObtenerUsuario` y `ListarUsuarios`; los errores son SOAP Fault |
+| GET | `/soap/usuarios?wsdl` | 200 | WSDL del servicio SOAP |
 
-Cuerpo de POST y PUT: `nombre`, `email`, `rol` (`admin`, `supervisor` o `usuario`) y `activo`. No se aceptan otros campos, incluido `id`. El contrato completo está en el README de la POC de Playwright.
+El contrato completo de la API REST está en [`src/test/resources/contracts/openapi.yaml`](src/test/resources/contracts/openapi.yaml), y el del servicio SOAP en [`usuarios.wsdl`](src/test/resources/contracts/usuarios.wsdl).
+
+Cuerpo de POST y PUT: `nombre`, `email`, `rol` (`admin`, `supervisor` o `usuario`) y `activo`. No se aceptan otros campos, incluido `id`.
 
 Los usuarios viven en memoria, en el data bucket `usuarios`: los cambios se pierden al reiniciar Mockoon o al llamar a `POST /api/test/reset`. **Ejecutar la suite restablece los datos**, así que borra los cambios hechos a mano.
 
@@ -150,6 +163,45 @@ El token se obtiene con un login real mediante `common/login.feature`, invocado 
 * header Authorization = 'Bearer ' + sesion.token
 ```
 
+## Servicio SOAP
+
+`POST /soap/usuarios` implementa SOAP 1.1 (document/literal) con el namespace `http://poc.qa/usuarios`. Comparte el data bucket `usuarios` con la API REST: un usuario creado por REST se obtiene por SOAP.
+
+| Operación | `SOAPAction` | Respuesta |
+|---|---|---|
+| `ObtenerUsuario` | `http://poc.qa/usuarios/ObtenerUsuario` | 200 con `ObtenerUsuarioResponse`, o SOAP Fault `soapenv:Client` "El usuario N no existe." con HTTP 500 |
+| `ListarUsuarios` | `http://poc.qa/usuarios/ListarUsuarios` | 200 con `ListarUsuariosResponse` |
+| Otra operación o XML mal formado | — | SOAP Fault `soapenv:Client` con HTTP 500 |
+
+Con curl desde PowerShell (use `curl.exe`, no el alias `curl`):
+
+```powershell
+curl.exe -X POST http://localhost:3001/soap/usuarios -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction: http://poc.qa/usuarios/ObtenerUsuario" --data-binary "<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:usu='http://poc.qa/usuarios'><soapenv:Body><usu:ObtenerUsuario><usu:id>2</usu:id></usu:ObtenerUsuario></soapenv:Body></soapenv:Envelope>"
+curl.exe -X POST http://localhost:3001/soap/usuarios -H "Content-Type: text/xml; charset=utf-8" -H "SOAPAction: http://poc.qa/usuarios/ListarUsuarios" --data-binary "@src/test/resources/data/soap/listar-usuarios.xml"
+curl.exe "http://localhost:3001/soap/usuarios?wsdl"
+```
+
+En Karate, `soap action` envía el POST con `Content-Type: text/xml` y la cabecera `SOAPAction`. Los mensajes están en `src/test/resources/data/soap/` y usan expresiones embebidas (`<usu:id>#(usuarioId)</usu:id>`). Karate ignora los prefijos de namespace en XPath, así que `/Envelope/Body/ObtenerUsuarioResponse/usuario/nombre` selecciona `soapenv:Envelope/soapenv:Body/...`.
+
+**Limitación del mock:** Mockoon lee el XML de la solicitud por ruta de objeto, con los prefijos incluidos (`soapenv:Envelope.soapenv:Body.usu:ObtenerUsuario.usu:id`). Por eso el mock solo entiende los prefijos `soapenv` y `usu`; un servicio SOAP real acepta cualquier prefijo asociado al mismo namespace.
+
+## Contratos formales
+
+| Contrato | Archivo | Validador | Qué se valida |
+|---|---|---|---|
+| OpenAPI 3.0.3 | `contracts/openapi.yaml` | `soporte/OpenApiContrato.java` con `openapi-request-validator-core` | Status documentado, tipos, campos obligatorios, campos de más, enumeraciones y cabeceras requeridas (`WWW-Authenticate`, `Retry-After`) |
+| WSDL con XML Schema | `contracts/usuarios.wsdl` | `soporte/XmlContrato.java` con `javax.xml.validation` | Contenido de `soapenv:Body` contra el XSD: tipos, patrones, enumeraciones, orden y namespace |
+
+Ninguno de los dos hace solicitudes: Karate envía la solicitud y pasa al validador el status, las cabeceras y el cuerpo recibidos. Devuelven la lista de errores, vacía si la respuesta cumple:
+
+```gherkin
+* def OpenApi = Java.type('soporte.OpenApiContrato')
+* match OpenApi.validarRespuesta('get', '/api/usuarios/1', responseStatus, responseHeaders, responseBytes) == []
+* match Java.type('soporte.XmlContrato').validar(responseBytes) == []
+```
+
+Además, escenarios de control comprueban que cada validador **rechaza** respuestas que no cumplen (tipo incorrecto, campo de más o faltante, status no documentado, 401 sin `WWW-Authenticate`, rol desconocido en XML, etc.), y que el WSDL publicado por el mock coincide con el del repositorio. `XmlContrato` deshabilita DTD y entidades externas para evitar XXE.
+
 ## Pruebas
 
 | Feature | Escenarios | Positivos | Negativos |
@@ -166,7 +218,9 @@ El token se obtiene con un login real mediante `common/login.feature`, invocado 
 | `errores/http-errors.feature` | 15 | — | 12 códigos y sus encabezados |
 | `errores/timeouts.feature` | 5 | Timeout suficiente | Timeout del cliente, 504 y 524 |
 | `contratos/contracts.feature` | 17 | Estructura, valores, campos sensibles y tiempo de respuesta | Los esquemas y validadores rechazan datos incorrectos |
-| **Total** | **152** | | |
+| `contratos/openapi.feature` | 45 | La especificación es válida; 35 respuestas reales de todos los endpoints cumplen el contrato | El validador rechaza 8 respuestas que no cumplen |
+| `soap/usuarios-soap.feature` | 16 | `ObtenerUsuario`, `ListarUsuarios`, datos compartidos con REST y WSDL publicado | 3 ids inexistentes, usuario eliminado, operación desconocida, XML mal formado y 6 respuestas que no cumplen el XSD |
+| **Total** | **213** | | |
 
 Técnicas de Karate usadas:
 
@@ -217,11 +271,12 @@ En PowerShell, cada argumento `-D...` va completo entre comillas dobles.
 
 | Tag | Contenido | Escenarios |
 |---|---|---|
-| `@smoke` | Flujo principal de cada operación | 14 |
-| `@regression` | Suite completa; todo escenario lo lleva | 152 |
-| `@negative` | Entradas inválidas y respuestas de error | 105 |
-| `@security` | Autenticación y autorización | 33 |
-| `@contract` | Estructura, tipos y encabezados | 17 |
+| `@smoke` | Flujo principal de cada operación | 17 |
+| `@regression` | Suite completa; todo escenario lo lleva | 213 |
+| `@negative` | Entradas inválidas y respuestas de error | 111 |
+| `@security` | Autenticación y autorización | 36 |
+| `@contract` | Estructura, tipos, encabezados, OpenAPI y WSDL/XSD | 71 |
+| `@soap` | Servicio SOAP | 16 |
 | `@timeout` | Timeouts del cliente y del servidor | 5 |
 
 Si algún escenario falla, `ApiTestRunner` falla y Maven termina con `BUILD FAILURE`.
@@ -238,6 +293,16 @@ Ejecuciones del 2026-11-11 en Windows 11, Java 21.0.1. El tiempo incluye el arra
 | Mockoon Desktop 9.10.0 | `--tags ~@timeout` | 147 passed, 18,1 s |
 | Mockoon Desktop 9.10.0 | `-Dkarate.env=ci` | 152 passed, 37,5 s |
 | Mockoon CLI 9.10.0 (puerto 3002) | `./mvnw test -Dkarate.env=ci` en Git Bash | 152 passed; runner en 34,35 s |
+
+Tras agregar SOAP y OpenAPI (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3002, `-DbaseUrl=http://localhost:3002`):
+
+| Comando | Resultado |
+|---|---|
+| Suite completa | 213 passed |
+| `--tags @contract` | 71 passed |
+| `--tags @soap` | 16 passed |
+| `--tags @smoke` | 17 passed |
+| `--tags ~@timeout` | 208 passed |
 
 ## Mockoon Desktop
 
@@ -331,7 +396,10 @@ Ambos proyectos prueban el mismo `mocks/usuarios-api.json` con los mismos datos 
 | Timeouts | 6 | 5 | Playwright prueba además el timeout configurado en el contexto |
 | Contratos | 13 | 17 | Karate agrega al esquema los casos de campo de más y rol desconocido, separa en dos el rechazo de errores genéricos y comprueba la búsqueda de campos sensibles sobre datos limpios |
 | Health | — | 1 | Playwright lo usa solo para verificar el servidor antes de la suite |
-| **Total** | **147** | **152** | |
+| **Subtotal REST comparable** | **147** | **152** | |
+| Contrato OpenAPI | — | 45 | Exclusivo de esta POC |
+| Servicio SOAP y WSDL/XSD | — | 16 | Exclusivo de esta POC; Playwright `APIRequestContext` no tiene soporte específico de SOAP |
+| **Total** | **147** | **213** | |
 
 ### Diferencias de enfoque
 
@@ -372,7 +440,9 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 - **Persistencia solo en memoria:** no hay una base de datos real.
 - **Un solo estado compartido:** la suite debe ejecutarse en un hilo. Paralelizar requeriría aislar los datos.
 - **Autenticación simulada:** el mock compara cadenas fijas, sin firma, expiración ni roles reales.
-- **Contratos propios:** los esquemas se escribieron a partir del contrato documentado, no de una especificación OpenAPI o JSON Schema formal.
+- **Contratos escritos para el mock:** `openapi.yaml` y `usuarios.wsdl` describen este mock; en un proyecto real vendrían del equipo de desarrollo.
+- **SOAP con prefijos fijos:** el mock solo entiende los prefijos `soapenv` y `usu` (ver [Servicio SOAP](#servicio-soap)).
+- **Validación OpenAPI de respuestas, no de solicitudes:** se valida lo que devuelve la API; las solicitudes inválidas se envían a propósito en los casos negativos.
 - **Errores simulados:** `/api/errores/*` devuelve el código al instante, sin reproducir el fallo real de un gateway o de Cloudflare.
 - **Tiempos no representativos:** los tiempos del mock no miden rendimiento.
 - **Línea `ERROR` esperada** en el log por el timeout del cliente.
@@ -380,8 +450,6 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 
 ## Mejoras futuras
 
-- Agregar un servicio SOAP al mock y probarlo con el soporte XML nativo de Karate.
-- Validar contratos contra una especificación OpenAPI o JSON Schema.
 - Evaluar la migración a Karate 2.x con JUnit 6.
 - Aislar los datos para ejecutar en paralelo.
 - Pruebas de rendimiento reutilizando los features con Karate Gatling.
