@@ -1,0 +1,9 @@
+{
+  "id": "#number? _ > 0",
+  "cuentaOrigen": "#number",
+  "cuentaDestino": "#number",
+  "monto": "#number? _ > 0",
+  "estado": "completada",
+  "saldoOrigen": "#number? _ >= 0",
+  "saldoDestino": "#number? _ >= 0"
+}

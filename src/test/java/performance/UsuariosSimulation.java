@@ -33,6 +33,17 @@ public class UsuariosSimulation extends Simulation {
 
     private static final String PERFIL = System.getProperty("perfil", "carga");
 
+    /**
+     * TPS medio esperado en carga, calculado a partir de la inyección: en régimen, 20 consultas x 2 solicitudes
+     * + 5 logins x 2 + 5 SOAP x 1 = 55 solicitudes por segundo; con la rampa de 10 s, la media de los 40 s
+     * ronda 48,6. Se exige 45: si el servicio no da abasto, las solicitudes se acumulan y el TPS cae.
+     */
+    private static final double TPS_MINIMO_CARGA = 45.0;
+
+    private final MonitorRecursos monitor = new MonitorRecursos(
+            System.getProperty("baseUrl", "http://localhost:3001"),
+            Long.getLong("monitor.intervaloMs", 1000));
+
     // Agrupa en el reporte las URIs con id variable, en vez de una fila por cada id
     private final KarateProtocolBuilder protocolo = karateProtocol(
             uri("/api/usuarios/{id}").nil()
@@ -60,6 +71,16 @@ public class UsuariosSimulation extends Simulation {
         setUp(poblacion)
                 .protocols(protocolo)
                 .assertions(aserciones());
+    }
+
+    @Override
+    public void before() {
+        monitor.iniciar();
+    }
+
+    @Override
+    public void after() {
+        monitor.detener(PERFIL);
     }
 
     /** Sube durante 10 s y sostiene 30 s: 20 consultas, 5 logins y 5 SOAP por segundo. */
@@ -93,7 +114,8 @@ public class UsuariosSimulation extends Simulation {
     }
 
     /**
-     * Carga: el p95 global bajo 500 ms, el máximo bajo 2 s y menos de 1 % de errores.
+     * Carga (acuerdo de nivel de servicio): p95 global bajo 500 ms, p99 bajo 800 ms, máximo bajo 2 s,
+     * menos de 1 % de errores, TPS medio de al menos TPS_MINIMO_CARGA y p95 bajo 500 ms en login y SOAP.
      * Estrés: solo se exige menos de 5 % de errores; los tiempos se analizan en el reporte.
      */
     private List<Assertion> aserciones() {
@@ -102,9 +124,12 @@ public class UsuariosSimulation extends Simulation {
         }
         return List.of(
                 global().responseTime().percentile(95.0).lt(500),
+                global().responseTime().percentile(99.0).lt(800),
                 global().responseTime().max().lt(2000),
                 global().failedRequests().percent().lt(1.0),
-                details("POST /api/auth/login").responseTime().percentile(95.0).lt(500)
+                global().requestsPerSec().gte(TPS_MINIMO_CARGA),
+                details("POST /api/auth/login").responseTime().percentile(95.0).lt(500),
+                details("POST /soap/usuarios").responseTime().percentile(95.0).lt(500)
         );
     }
 }

@@ -1,6 +1,8 @@
 # POC API REST con Karate DSL y Mockoon
 
-Prueba de concepto de automatización de pruebas de servicios backend con Karate DSL: una API REST y un servicio SOAP de usuarios simulados con Mockoon, con validación de contratos OpenAPI y WSDL/XSD. Nació como contraparte de [poc_api_rest_playwright_mockoon](https://github.com/RicardoPavezCatrileo/poc_api_rest_playwright_mockoon) (Python, Playwright y Pytest), que prueba la misma API REST; al final de este documento se comparan caso por caso. El mock de esta POC se extendió con el servicio SOAP, que no existe en la otra.
+Prueba de concepto de automatización de pruebas de servicios backend con Karate DSL: una API REST y un servicio SOAP de usuarios simulados con Mockoon, con validación de contratos OpenAPI y WSDL/XSD. Nació como contraparte de [poc_api_rest_playwright_mockoon](https://github.com/RicardoPavezCatrileo/poc_api_rest_playwright_mockoon) (Python, Playwright y Pytest), que prueba la misma API REST; al final de este documento se comparan caso por caso. El mock de esta POC se extendió con el servicio SOAP, que no existe en la otra. Además incluye datos con SQL, pruebas de carga y estrés con Gatling, una colección de Postman ejecutada con Newman y pipelines de GitHub Actions y Azure DevOps.
+
+Para estudiar la POC hay dos páginas HTML en la raíz: [guia_qa_poc_api_rest_karate_mockoon.html](guia_qa_poc_api_rest_karate_mockoon.html) (guía general) y [arquitectura.html](arquitectura.html) (diagrama interactivo, cobertura de requisitos y preguntas de entrevista).
 
 Todas las credenciales, tokens y API Keys de este repositorio son ficticios y exclusivamente de laboratorio.
 
@@ -10,47 +12,73 @@ Todas las credenciales, tokens y API Keys de este repositorio son ficticios y ex
 - Validar flujos CRUD, autenticación, autorización, errores HTTP, timeouts y contratos de respuesta.
 - Validar las respuestas contra contratos formales: OpenAPI 3 para REST y el XML Schema del WSDL para SOAP.
 - Distinguir un timeout del cliente de una respuesta HTTP 504 o 524.
-- Ejecutar la misma suite en local, con Mockoon Desktop, y en GitHub Actions, con Mockoon CLI.
-- Documentar una estrategia de ramas para trabajar en equipo.
+- Preparar y validar datos de prueba con SQL: JOIN, agregaciones, conciliación e integridad.
+- Ejecutar pruebas de carga y estrés con Gatling reutilizando los features, con SLA y monitoreo de recursos.
+- Mantener una colección de Postman con variables y scripts, ejecutada con Newman.
+- Ejecutar la misma suite en local, con Mockoon Desktop, y en GitHub Actions y Azure DevOps, con Mockoon CLI.
+- Documentar una estrategia de ramas, la gestión del trabajo en Azure Boards y un informe de resultados.
 
 ## Arquitectura
 
 ```mermaid
 flowchart LR
     subgraph Pruebas
-        R[ApiTestRunner.java<br/>JUnit 5, un hilo] --> F[features<br/>usuarios, auth, errores,<br/>contratos, soap]
+        R[ApiTestRunner.java<br/>JUnit 5, un hilo] --> F[features<br/>usuarios, auth, errores,<br/>contratos, soap, sql]
         F --> K[karate-config.js<br/>URL, timeouts, entorno]
         F --> C[common/<br/>reset, login, get-lento]
         F --> S[common/schemas<br/>esquemas y errores esperados]
         F --> D[resources/data<br/>JSON, CSV y XML]
-        F --> V[soporte/<br/>OpenApiContrato, XmlContrato]
+        F --> V[soporte/<br/>OpenApiContrato, XmlContrato,<br/>BaseDeDatos]
         V --> CT[resources/contracts<br/>openapi.yaml, usuarios.wsdl]
+        V --> H2[(H2 en memoria<br/>resources/sql)]
+    end
+    subgraph Performance
+        G[UsuariosSimulation<br/>Gatling + karate-gatling] --> PF[performance/*.feature]
+        G --> MR[MonitorRecursos]
     end
     F -->|REST JSON y SOAP XML| M[Mockoon<br/>localhost:3001]
+    PF -->|carga HTTP| M
+    N[Newman<br/>colección de Postman] --> M
     E[mocks/usuarios-api.json] --> M
     DK[Mockoon Desktop<br/>desarrollo local] -.-> M
     CL[Mockoon CLI<br/>terminal y CI] -.-> M
     R --> REP[target/karate-reports]
-    GA[GitHub Actions] --> CL
-    GA --> R
+    G --> GREP[target/gatling]
+    CI[GitHub Actions<br/>Azure DevOps] --> CL
+    CI --> R
+    CI --> N
+    CI --> G
 ```
 
 ```text
-.github/workflows/api-tests.yml   Workflow de CI
+.github/workflows/api-tests.yml   Workflow de GitHub Actions
 .github/pull_request_template.md  Plantilla de pull request
 .vscode/settings.json             Configuración de Visual Studio Code
+azure-pipelines.yml               Pipeline de Azure DevOps, equivalente al workflow
+compose.yaml                      Mockoon y WireMock en contenedores (Docker o Podman)
+arquitectura.html                 Diagrama interactivo, cobertura de requisitos y preguntas de entrevista
+guia_qa_poc_api_rest_karate_mockoon.html   Guía QA de la POC
 docs/branching-strategy.md        Estrategia de ramas
+docs/azure-boards.md              Gestión del trabajo en Azure Boards, políticas de Azure Repos
+docs/informe-resultados.md        Informe de resultados: métricas, hallazgos y riesgos
+docs/monitoreo-instana.md         Métricas de TPS, latencia y recursos, y su equivalencia en Instana
 mocks/usuarios-api.json           Entorno de Mockoon: API REST y servicio SOAP
+postman/                          Colección de Postman y entorno local
+wiremock/                         Stubs de WireMock (mappings y __files) para un subconjunto de la API
+scripts/resumen-performance.mjs   Resumen de TPS, latencias, recursos y hallazgos de la última ejecución de Gatling
 src/test/java/
   ApiTestRunner.java              Punto de entrada único de la suite
   karate-config.js                URL base, timeouts y entornos local y ci
   logback-test.xml                Log HTTP en target/karate.log
   common/                         Features reutilizables (@ignore), esquemas y campos-sensibles.js
-  soporte/                        Validadores de contrato en Java: OpenAPI y XSD del WSDL
-  health/ usuarios/ auth/ errores/ contratos/ soap/   Features
+  soporte/                        Validadores de contrato (OpenAPI, XSD) y acceso JDBC (BaseDeDatos)
+  health/ usuarios/ auth/ errores/ contratos/ soap/ sql/   Features
+  performance/                    Simulación de Gatling, monitor de recursos y features de carga
+performance/k6/carga.js           La misma carga escrita en k6
 src/test/resources/
   contracts/                      openapi.yaml y usuarios.wsdl
   data/                           Datos de prueba en JSON y CSV; data/soap/ con los mensajes XML
+  sql/                            schema.sql y datos.sql de la base H2
 ```
 
 Cambios respecto de la estructura inicial, con su motivo:
@@ -59,10 +87,11 @@ Cambios respecto de la estructura inicial, con su motivo:
 - `common/get-lento.feature`: aísla la llamada con timeout corto para capturar el error (ver [Timeouts](#timeouts)).
 - `common/campos-sensibles.js`: busca campos sensibles sin distinguir mayúsculas y en objetos anidados, algo que un esquema `#notpresent` no hace.
 - `soap/`, `soporte/` y `src/test/resources/contracts/`: servicio SOAP y contratos formales, agregados para cubrir pruebas SOAP, WSDL/XSD y OpenAPI.
+- `sql/`, `performance/`, `postman/` y `azure-pipelines.yml`: SQL, Gatling, Postman y Azure DevOps, agregados para cubrir los requisitos de una oferta de QA Automation backend.
 
 ### Ejecución en un solo hilo
 
-`ApiTestRunner` ejecuta `Runner.path("classpath:").parallel(1)`. Mockoon guarda los usuarios en un único data bucket compartido y cada escenario que modifica datos lo restablece con `POST /api/test/reset`: dos escenarios en paralelo se pisarían los datos. Los features de `common/` llevan `@ignore` y solo se ejecutan cuando otro los llama.
+`ApiTestRunner` ejecuta con `parallel(1)` una lista explícita de carpetas (`health`, `usuarios`, `auth`, `errores`, `contratos`, `soap` y `sql`). Una carpeta nueva de features debe agregarse a esa lista; `performance/` queda fuera a propósito, porque esos features los ejecuta Gatling. Mockoon guarda los usuarios en un único data bucket compartido y cada escenario que modifica datos lo restablece con `POST /api/test/reset`: dos escenarios en paralelo se pisarían los datos. Los features de `common/` llevan `@ignore` y solo se ejecutan cuando otro los llama.
 
 ## Tecnologías
 
@@ -79,8 +108,17 @@ Versiones verificadas en Maven Central y GitHub el 2026-11-10.
 | maven-compiler-plugin | Compilación | 3.16.0 |
 | Mockoon Desktop | Mock local con visualización de solicitudes | Probado con 9.10.0 |
 | Mockoon CLI | Mock en terminal y CI | 9.10.0 |
-| Node.js | Ejecución de Mockoon CLI | Probado con 26.13.0 |
+| Node.js | Ejecución de Mockoon CLI, Newman y el resumen de performance | Probado con 26.13.0 |
+| H2 (`com.h2database:h2`) | Base de datos en memoria, modo PostgreSQL | 2.5.252 |
+| `io.karatelabs:karate-gatling` | Carga y estrés reutilizando features (Gatling 3.11.5) | 1.5.2 |
+| gatling-maven-plugin | Ejecución de la simulación (`gatling:test`) | 4.3.4 |
+| Newman | Ejecución de la colección de Postman | 6.2.3 |
 | GitHub Actions | Integración continua | checkout v7, setup-java v6, setup-node v7, upload-artifact v7 |
+| Imagen `mockoon/cli` | Mockoon en contenedor | 9.10.0 |
+| Imagen `grafana/k6` | Carga con k6, para comparar con Gatling | 2.3.0 |
+| Imagen `wiremock/wiremock` | Segundo mock, para comparar herramientas | 3.13.2 |
+| Podman | Contenedores en local (también funciona con Docker) | Probado con 5.8.3, máquina WSL |
+| Azure Pipelines | Integración continua equivalente | JavaToolInstaller@1, UseNode@1, Cache@2, PublishTestResults@2, PublishPipelineArtifact@1 |
 
 **Por qué Karate 1.5.2 y no 2.x:** la última versión estable de Karate es 2.1.4, pero solo publica integración con JUnit 6 (`karate-junit6`). `karate-junit5` llega hasta 1.5.2, y el proyecto se definió con JUnit 5.
 
@@ -130,7 +168,10 @@ El entorno `ci` desactiva el formato legible de solicitudes y respuestas en el l
 | GET | `/api/secure/usuarios` | 200, 401, 403 | Requiere token Bearer |
 | GET | `/api/apikey/usuarios` | 200, 401 | Requiere `X-API-Key` |
 | GET | `/api/errores/{codigo}` | El indicado | 400, 401, 403, 404, 409, 422, 429, 500, 502, 503, 504 y 524 |
-| POST | `/api/test/reset` | 200 | Solo para laboratorio: restablece los usuarios |
+| GET | `/api/cuentas/{id}` | 200, 401, 403, 404 | Requiere token Bearer |
+| POST | `/api/transferencias` | 201, 400, 401, 403, 404, 422 | Requiere token Bearer; reglas de negocio en [Dominio bancario](#dominio-bancario) |
+| GET | `/api/transferencias` | 200, 401, 403 | Historial desde el último reset; requiere token Bearer |
+| POST | `/api/test/reset` | 200 | Solo para laboratorio: restablece usuarios, cuentas y transferencias |
 | POST | `/soap/usuarios` | 200, 500 | Servicio SOAP 1.1: `ObtenerUsuario` y `ListarUsuarios`; los errores son SOAP Fault |
 | GET | `/soap/usuarios?wsdl` | 200 | WSDL del servicio SOAP |
 
@@ -220,7 +261,9 @@ Además, escenarios de control comprueban que cada validador **rechaza** respues
 | `contratos/contracts.feature` | 17 | Estructura, valores, campos sensibles y tiempo de respuesta | Los esquemas y validadores rechazan datos incorrectos |
 | `contratos/openapi.feature` | 45 | La especificación es válida; 35 respuestas reales de todos los endpoints cumplen el contrato | El validador rechaza 8 respuestas que no cumplen |
 | `soap/usuarios-soap.feature` | 16 | `ObtenerUsuario`, `ListarUsuarios`, datos compartidos con REST y WSDL publicado | 3 ids inexistentes, usuario eliminado, operación desconocida, XML mal formado y 6 respuestas que no cumplen el XSD |
-| **Total** | **213** | | |
+| `sql/datos-sql.feature` | 15 | API frente a tabla, preparar datos con JOIN y agregaciones, LEFT JOIN, HAVING, conciliación y usuario creado por la API | Saldo alterado detectado, datos que violan la integridad e intento de inyección SQL |
+| `transferencias/transferencias.feature` | 38 | Cuenta, transferencia con historial, conservación del dinero, redondeo a centavos, saldo completo, contrato y consistencia con SQL | 7 reglas de negocio, 14 datos inválidos, 4 malformados, 401, 403 y rollback SQL; cada rechazo comprueba que ningún saldo cambió |
+| **Total** | **266** | | |
 
 Técnicas de Karate usadas:
 
@@ -271,13 +314,17 @@ En PowerShell, cada argumento `-D...` va completo entre comillas dobles.
 
 | Tag | Contenido | Escenarios |
 |---|---|---|
-| `@smoke` | Flujo principal de cada operación | 17 |
-| `@regression` | Suite completa; todo escenario lo lleva | 213 |
-| `@negative` | Entradas inválidas y respuestas de error | 111 |
-| `@security` | Autenticación y autorización | 36 |
-| `@contract` | Estructura, tipos, encabezados, OpenAPI y WSDL/XSD | 71 |
+| `@smoke` | Flujo principal de cada operación | 20 |
+| `@regression` | Suite completa; todo escenario lo lleva | 266 |
+| `@negative` | Entradas inválidas y respuestas de error | 147 |
+| `@security` | Autenticación y autorización | 40 |
+| `@contract` | Estructura, tipos, encabezados, OpenAPI y WSDL/XSD | 72 |
 | `@soap` | Servicio SOAP | 16 |
+| `@sql` | Datos con SQL | 18 |
+| `@banca` | Cuentas y transferencias | 38 |
 | `@timeout` | Timeouts del cliente y del servidor | 5 |
+
+Conteos tomados del reporte de la ejecución completa del 2026-11-11.
 
 Si algún escenario falla, `ApiTestRunner` falla y Maven termina con `BUILD FAILURE`.
 
@@ -303,6 +350,144 @@ Tras agregar SOAP y OpenAPI (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3002, `
 | `--tags @soap` | 16 passed |
 | `--tags @smoke` | 17 passed |
 | `--tags ~@timeout` | 208 passed |
+
+Tras agregar SQL (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3001):
+
+| Comando | Resultado |
+|---|---|
+| `.\mvnw.cmd test` | 228 passed, 15 features; runner en 42,4 s |
+| `--tags ~@timeout` | 223 passed; runner en 22,5 s |
+
+Tras agregar el dominio bancario (2026-11-11, Mockoon CLI 9.10.0 en el puerto 3001):
+
+| Comando | Resultado |
+|---|---|
+| `.\mvnw.cmd test` | 266 passed, 16 features; runner en 50,2 s |
+| `classpath:transferencias/transferencias.feature` | 38 passed |
+
+## Datos con SQL
+
+`sql/datos-sql.feature` usa `soporte/BaseDeDatos`, que recrea en cada escenario una base H2 en memoria (modo PostgreSQL) con `src/test/resources/sql/schema.sql` y `datos.sql`: tablas `usuarios`, `cuentas` y `movimientos`. Los usuarios semilla coinciden con los iniciales del mock.
+
+```gherkin
+* def db = Java.type('soporte.BaseDeDatos')
+* db.inicializar()
+* def filas = db.consultar('SELECT id, nombre, email, rol, activo FROM usuarios ORDER BY id')
+Given path 'api', 'usuarios'
+When method get
+Then status 200
+And match response == filas
+```
+
+| Uso | Ejemplo |
+|---|---|
+| Validar la API contra la base | La lista de `GET /api/usuarios` es igual a la tabla |
+| Preparar datos | JOIN, `SUM`, `GROUP BY`, `ORDER BY` y `LIMIT 1` eligen al usuario activo con mayor saldo, que luego se consulta en la API |
+| Relaciones | LEFT JOIN con `IS NULL` para usuarios sin cuentas activas |
+| Agregaciones | `COUNT`, `SUM` y `AVG` con `HAVING`; totales de movimientos por tipo |
+| Conciliación | Saldo = saldo inicial + depósitos − retiros, y un saldo alterado se detecta |
+| Integridad y seguridad | La base rechaza datos que violan sus restricciones; un intento de inyección SQL no altera la consulta |
+
+Todas las consultas usan `PreparedStatement` con parámetros `?`. Con `-Ddb.url`, `-Ddb.usuario` y `-Ddb.clave` la misma clase apunta a otra base, agregando su driver JDBC al `pom.xml`.
+
+## Postman y Newman
+
+`postman/usuarios-api.postman_collection.json` es una colección independiente de los features: las pruebas automatizadas usan solo Karate, y la colección demuestra el uso de Postman.
+
+| Carpeta | Contenido |
+|---|---|
+| 01 Preparación | Restablecer datos y health check |
+| 02 Autenticación | Login (guarda el token), recurso seguro con y sin token, API Key |
+| 03 CRUD encadenado | Crear (email único y guarda el id), obtener, actualizar, eliminar y comprobar el 404 |
+| 04 SOAP | `ObtenerUsuario` y el SOAP Fault de un usuario inexistente |
+| 05 Errores | 503 con `Retry-After` |
+| 06 Banca | Saldo de la cuenta de origen (lo guarda), transferencia válida que descuenta el monto exacto y saldo insuficiente (422) |
+
+Usa variables de entorno (`postman/local.postman_environment.json`) y de colección, un script previo que genera un email único con `Date.now()`, tests que validan el esquema con `jsonSchema` y guardan valores para encadenar solicitudes, y un test común a toda la colección para el tiempo de respuesta.
+
+```powershell
+npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json
+```
+
+Resultado del 2026-11-11: 14 solicitudes y 45 de 45 aserciones aprobadas (tiempo medio de respuesta de 35 ms); con la carpeta 06 Banca, 17 solicitudes y 55 de 55 aserciones.
+
+## Dominio bancario
+
+Cuentas y transferencias con reglas de negocio, para practicar casos del sector financiero. Las cuentas del mock (data bucket `cuentas`) son las mismas de `src/test/resources/sql/datos.sql`:
+
+| Cuenta | Titular | Tipo | Estado | Saldo inicial |
+|---|---|---|---|---:|
+| 10 | Ana Torres | corriente | activa | 1500 |
+| 11 | Ana Torres | ahorro | activa | 3200.50 |
+| 20 | Bruno Díaz | corriente | activa | 250 |
+| 30 | Carla Muñoz | ahorro | cerrada | 0 |
+
+`POST /api/transferencias` recibe `{ "cuentaOrigen": 10, "cuentaDestino": 20, "monto": 125.75 }` y evalúa las reglas en este orden:
+
+| # | Regla | Respuesta |
+|---|---|---|
+| 1 | Token Bearer válido | 401 con `WWW-Authenticate: Bearer` |
+| 2 | Token con permisos | 403 |
+| 3 | Cuerpo JSON válido | 400 |
+| 4 | Esquema: cuentas enteras positivas, monto mayor que 0 y hasta 10.000.000, sin otros campos | 422 |
+| 5 | Monto con máximo 2 decimales | 422 |
+| 6 | Cuentas distintas | 422 |
+| 7 | Cuenta de origen y de destino existentes | 404 |
+| 8 | Cuentas activas | 422 |
+| 9 | Saldo suficiente | 422, con el saldo disponible y el monto solicitado |
+| — | Todo lo anterior se cumple | 201 con los saldos resultantes |
+
+Cada regla es una respuesta propia de la ruta, con reglas `templating` de Mockoon que recorren el data bucket. La respuesta 201 actualiza los dos saldos con `setData` y registra la transferencia en el data bucket `transferencias`. Los saldos se redondean a centavos (`round` sobre el monto × 100), así que 0.1 + 0.2 da exactamente 0.3.
+
+`transferencias/transferencias.feature` prueba todas las reglas y comprueba en cada rechazo que **ningún saldo cambió** y que el historial sigue vacío. También comprueba que el dinero total se conserva tras varias transferencias, el redondeo, el saldo completo como límite y el contrato OpenAPI. Del lado de la base, `BaseDeDatos.transferir` hace la misma transferencia en una transacción JDBC (dos `UPDATE` y dos movimientos). Los escenarios `@sql` comprueban que la API y la base quedan con los mismos saldos y que una transferencia que falla hace rollback completo: el `CHECK (saldo >= 0)` rechaza el saldo insuficiente y una cuenta de destino cerrada revierte el descuento ya hecho al origen.
+
+## Performance
+
+`performance/UsuariosSimulation.java` ejecuta con Gatling (vía `karate-gatling`) los features de `performance/`: consultas REST, login con recurso protegido y `ObtenerUsuario` por SOAP. `ApiTestRunner` no los incluye.
+
+```powershell
+.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"    # 40 s; o "-Dperfil=estres", 60 s
+node scripts\resumen-performance.mjs                      # Resumen en Markdown
+```
+
+| Perfil | Inyección | Aserciones (fallan el build) |
+|---|---|---|
+| `carga` | Rampa de 10 s y 30 s sostenidos: 20 consultas, 5 logins y 5 SOAP por segundo | p95 global < 500 ms, p99 < 800 ms, máximo < 2 s, errores < 1 %, TPS medio ≥ 45, p95 de login y SOAP < 500 ms |
+| `estres` | Cinco escalones de 10 s, de 20 a 100 consultas por segundo, con login y SOAP proporcionales | Errores < 5 %; los tiempos se analizan en el reporte |
+
+El TPS mínimo sale de la inyección: en régimen son 55 solicitudes por segundo (20 × 2 + 5 × 2 + 5 × 1) y, con la rampa, la media de la prueba ronda 48,6.
+
+Mientras corre la simulación, `MonitorRecursos` muestrea cada segundo la CPU y la memoria del host, del inyector y del proceso del mock (que encuentra por el puerto de `baseUrl`). `resumen-performance.mjs` combina esos datos con las estadísticas de Gatling y aplica reglas simples para señalar errores, el endpoint más lento, la latencia de cola y la saturación. Cómo se relaciona esto con Instana está en [docs/monitoreo-instana.md](docs/monitoreo-instana.md).
+
+| Archivo | Contenido |
+|---|---|
+| `target/gatling/<ejecución>/index.html` | Reporte HTML de Gatling |
+| `target/gatling-recursos/recursos.csv` | Una muestra de recursos por segundo |
+| `target/gatling-recursos/resumen.json` | Promedio y máximo de cada recurso |
+| `target/gatling-recursos/resumen-performance.md` | Resumen generado por el script |
+
+### Resultados reales
+
+Ejecuciones del 2026-11-11 en Windows 11 (20 núcleos, 16 GB), Java 21, Mockoon CLI 9.10.0 en el puerto 3001, con el inyector y el mock en la misma máquina.
+
+| Perfil | Solicitudes | KO | TPS medio | p50 | p95 | p99 | Máx | CPU host máx | CPU mock prom / máx | Memoria mock máx |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| `carga` | 1.950 | 0 | 48,75 | 20 ms | 31 ms | 32 ms | 36 ms | 20,2 % | 24,3 / 70,4 % | 260,1 MB |
+| `estres` | 9.570 | 0 | 162,2 | 13 ms | 22 ms | 29 ms | 35 ms | 32,2 % | 36,5 / 88,1 % | 283,7 MB |
+
+La CPU del mock se expresa como porcentaje de un núcleo. Las 7 aserciones de `carga` pasaron.
+
+**Hallazgo:** en `estres`, el CPU medio del mock subió con cada escalón (21,5, 24,4, 40,6, 47,6 y 51,0 %, por tramos de 12 s), mientras el host no pasó de 32 %. Las latencias siguieron bajas, pero el hilo de eventos de Node sería el primer recurso en saturarse si la carga siguiera creciendo. En una ejecución anterior, con escalones de 50 a 250 consultas por segundo, el límite fue el inyector: se agotaron los puertos efímeros de Windows (ver el comentario de `UsuariosSimulation.estres()`).
+
+### k6
+
+`performance/k6/carga.js` reproduce el perfil `carga` en k6 2.3.0: la misma inyección, los mismos nombres de solicitud y los mismos umbrales. Se ejecuta con la imagen `grafana/k6`, sin instalar k6:
+
+```powershell
+podman run --rm -e BASE_URL=http://host.containers.internal:3001 -v "${PWD}\performance\k6:/scripts:ro" -v "${PWD}\target\k6:/resultados" docker.io/grafana/k6:2.3.0 run --quiet /scripts/carga.js
+```
+
+Con el mismo mock (Mockoon en contenedor), el 2026-11-11: Gatling 1.950 solicitudes, 48,75 TPS, p95 32 ms; k6 1.950 solicitudes, 48,71 TPS, p95 13 ms; las dos cumplieron el SLA. La diferencia de latencia no se atribuye a la herramienta: el keep-alive se descartó con una medición y la ruta de red queda como hipótesis. El detalle está en [docs/k6-vs-gatling.md](docs/k6-vs-gatling.md).
 
 ## Mockoon Desktop
 
@@ -343,6 +528,59 @@ Invoke-RestMethod http://localhost:3001/api/health
 Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Get-CimInstance Win32_Process -Filter "ProcessId=$($_.OwningProcess)" } | Select-Object ProcessId, Name, CommandLine | Format-List
 ```
 
+## Contenedores y WireMock
+
+`compose.yaml` levanta dos mocks en contenedores:
+
+| Servicio | Imagen | Puerto | Qué sirve |
+|---|---|---|---|
+| `mockoon` | `mockoon/cli:9.10.0` | 3001 | El mismo `mocks/usuarios-api.json` que usa Mockoon CLI: toda la API |
+| `wiremock` | `wiremock/wiremock:3.13.2` | 8080 | Un subconjunto con stubs propios en `wiremock/`: health, reset, usuarios por id (con 404 por plantilla) y API Key |
+
+Con Docker, o con Podman y un proveedor de compose:
+
+```powershell
+docker compose up -d
+.\mvnw.cmd test
+.\mvnw.cmd test "-DbaseUrl=http://localhost:8080" "-Dkarate.options=classpath:health/health.feature classpath:usuarios/get-usuarios.feature classpath:auth/api-key.feature"
+docker compose down
+```
+
+Con Podman sin proveedor de compose, los comandos equivalentes (fueron los usados en la verificación):
+
+```powershell
+podman machine start
+podman run -d --name poc-mockoon -p 3001:3001 -v "${PWD}\mocks:/data:ro" docker.io/mockoon/cli:9.10.0 --data /data/usuarios-api.json --port 3001 --log-transaction
+podman run -d --name poc-wiremock -p 8080:8080 -v "${PWD}\wiremock:/home/wiremock:ro" docker.io/wiremock/wiremock:3.13.2
+podman rm -f poc-mockoon poc-wiremock
+```
+
+El Mockoon en contenedor usa el puerto 3001, igual que Mockoon CLI o Desktop: solo uno a la vez.
+
+**Resultados del 2026-11-11** (Podman 5.8.3 en Windows 11):
+
+| Mock | Ejecución | Resultado |
+|---|---|---|
+| Mockoon en contenedor | Suite completa | 266 passed; runner en 38,8 s |
+| WireMock en contenedor | `health`, `get-usuarios` y `api-key` | 13 passed; el registro de WireMock (`/__admin/requests`) confirmó las 53 solicitudes |
+
+Los mismos features pasan contra las dos herramientas sin cambiar una línea: solo cambia `baseUrl`. Al pasar varias rutas en `-Dkarate.options`, conviene usar la ruta completa del archivo: con `classpath:health` como primera ruta, ese feature no se ejecutó.
+
+### Mockoon frente a WireMock
+
+Comparación basada en lo implementado en esta POC:
+
+| Aspecto | Mockoon | WireMock |
+|---|---|---|
+| Definición | Un archivo de entorno JSON, editable en Mockoon Desktop | Un archivo JSON por stub (`mappings/`) y cuerpos en `__files/`; también un DSL de Java |
+| Selección de la respuesta | Rutas en orden y reglas por respuesta (cuerpo, cabeceras, esquema JSON, plantillas) | `priority` entre stubs y matchers de la solicitud |
+| Estado | Data buckets que las plantillas leen y modifican (`setData`): CRUD, reset y saldos | Escenarios (máquina de estados); no se usaron aquí |
+| Plantillas | Handlebars con helpers de datos | Handlebars (`response-template`), usado para el 404 y el cuerpo por id |
+| Registro de solicitudes | Pestaña Logs de Desktop o `--log-transaction` | Journal en `/__admin/requests` |
+| Ecosistema | Node.js; app de escritorio y CLI | Java; se puede embeber en pruebas JUnit |
+
+Para esta POC, Mockoon conviene porque las reglas de negocio (CRUD, transferencias) necesitan estado compartido. WireMock es la opción natural en un equipo Java que quiere los stubs junto al código de prueba.
+
 ## Reportes
 
 Todo queda en `target/`, que no se versiona:
@@ -352,6 +590,9 @@ Todo queda en `target/`, que no se versiona:
 | `target/karate-reports/karate-summary.html` | Resumen HTML nativo de Karate, con enlaces al detalle de cada feature, tags y línea de tiempo |
 | `target/karate-reports/*.json` | Reporte en formato Cucumber JSON (`outputCucumberJson(true)`), útil para integrarlo con herramientas como Xray o cucumber-reporting |
 | `target/karate.log` | Cada solicitud y respuesta HTTP; se reescribe en cada ejecución |
+| `target/gatling/<ejecución>/index.html` | Reporte HTML de Gatling |
+| `target/gatling-recursos/` | Muestras de recursos, su resumen y `resumen-performance.md` |
+| `target/newman/newman.xml` | Resultado de Newman en JUnit (en CI) |
 
 ```powershell
 Start-Process .\target\karate-reports\karate-summary.html
@@ -363,18 +604,41 @@ Start-Process .\target\karate-reports\karate-summary.html
 
 1. Configura Java 21 (Temurin) con caché de Maven, y Node.js.
 2. Valida el mock e inicia Mockoon CLI con `--log-transaction`.
-3. Espera a que `/api/health` responda.
+3. Espera a que `/api/health` responda (`curl --retry`).
 4. Ejecuta `./mvnw -B test "-Dkarate.env=ci"`.
-5. Publica `target/karate-reports/`, `target/karate.log` y `mockoon.log` como artifact `reporte-pruebas`, incluso si hay fallos.
-6. El job termina con error si falla algún escenario.
+5. Ejecuta la colección de Postman con Newman (reporte JUnit en `target/newman/`).
+6. Ejecuta la carga con Gatling (`gatling:test`, perfil `carga`) y publica el resumen de performance en el resumen del job; luego la misma carga con k6 (`grafana/k6`, `--network host`).
+7. Publica `target/karate-reports/`, `target/karate.log`, `target/gatling/`, `target/gatling-recursos/`, `target/newman/` y `mockoon.log` como artifact `reporte-pruebas`.
 
-No necesita Mockoon Desktop ni secretos. El artifact contiene las credenciales ficticias de laboratorio.
+Un segundo job, `contenedores`, corre en paralelo: levanta `compose.yaml` con `docker compose`, ejecuta la suite completa contra Mockoon en contenedor y los features de solo lectura contra WireMock, y publica el artifact `reporte-contenedores`.
+
+Los pasos 5 a 7 usan `if: ${{ !cancelled() }}` o `always()`: corren aunque Karate falle, y el job igual termina en rojo. No necesita Mockoon Desktop ni secretos. El artifact contiene las credenciales ficticias de laboratorio.
 
 `mvnw` debe tener permiso de ejecución en Git (`git update-index --chmod=+x mvnw`), porque Windows no lo conserva.
 
+Resultado del 2026-11-11: los runs de `main` y de `feature/performance-metrics` terminaron en verde; el segundo ejecutó sus 12 pasos en 2 min 17 s.
+
+## Azure DevOps
+
+`azure-pipelines.yml` hace los mismos pasos que el workflow de GitHub. Se crea en **Pipelines > New pipeline > Existing Azure Pipelines YAML file**.
+
+| Aspecto | Azure Pipelines |
+|---|---|
+| Disparadores | Push a `main` y `feature/*`; PR hacia `main` (la sección `pr:` aplica a GitHub y Bitbucket; con Azure Repos se usa la política de rama **Build validation**) |
+| Agente | `ubuntu-latest`, con `JavaToolInstaller@1`, `UseNode@1` y `Cache@2` para Maven |
+| Pasos que corren aunque Karate falle | `condition: succeededOrFailed()` en Newman, Gatling y el resumen |
+| Resultados | `PublishTestResults@2` muestra cada escenario de Karate y cada solicitud de Newman en la pestaña **Tests** |
+| Reportes | `PublishPipelineArtifact@1` publica el artefacto `reporte-pruebas` |
+
+El pipeline de Azure no se ha ejecutado en una organización de Azure DevOps; el workflow de GitHub, que hace lo mismo, sí. La gestión del trabajo en **Azure Boards** (work items, criterios de aceptación, vínculo con commits y PR, plantilla de Bug) y las políticas de rama de **Azure Repos** están en [docs/azure-boards.md](docs/azure-boards.md).
+
+## Informe de resultados
+
+[docs/informe-resultados.md](docs/informe-resultados.md) reúne los resultados funcionales, de Postman, de performance y de CI, con los hallazgos, los riesgos y las recomendaciones.
+
 ## Estrategia de ramas
 
-`main` recibe los cambios mediante pull requests desde `feature/api-crud`, `feature/api-auth` y `feature/api-errors`. El detalle está en [docs/branching-strategy.md](docs/branching-strategy.md).
+`main` recibe los cambios mediante pull requests desde ramas `feature/*` (`feature/api-crud`, `feature/api-auth`, `feature/api-errors`, `feature/api-soap`, `feature/performance-sql`, `feature/postman-azure`, `feature/performance-metrics`…). El detalle está en [docs/branching-strategy.md](docs/branching-strategy.md).
 
 ## Comparativa con la POC de Playwright + Pytest
 
@@ -437,14 +701,15 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 
 ## Limitaciones
 
-- **Persistencia solo en memoria:** no hay una base de datos real.
+- **Persistencia solo en memoria:** el mock guarda los datos en memoria y la base de las pruebas SQL es H2 en memoria, separada del mock.
 - **Un solo estado compartido:** la suite debe ejecutarse en un hilo. Paralelizar requeriría aislar los datos.
 - **Autenticación simulada:** el mock compara cadenas fijas, sin firma, expiración ni roles reales.
 - **Contratos escritos para el mock:** `openapi.yaml` y `usuarios.wsdl` describen este mock; en un proyecto real vendrían del equipo de desarrollo.
 - **SOAP con prefijos fijos:** el mock solo entiende los prefijos `soapenv` y `usu` (ver [Servicio SOAP](#servicio-soap)).
 - **Validación OpenAPI de respuestas, no de solicitudes:** se valida lo que devuelve la API; las solicitudes inválidas se envían a propósito en los casos negativos.
 - **Errores simulados:** `/api/errores/*` devuelve el código al instante, sin reproducir el fallo real de un gateway o de Cloudflare.
-- **Tiempos no representativos:** los tiempos del mock no miden rendimiento.
+- **Tiempos no representativos:** los tiempos del mock no miden el rendimiento de un backend real, y en local el generador de carga y el mock comparten la máquina.
+- **Sin APM:** Instana no está disponible en local; `MonitorRecursos` mide CPU y memoria, pero no hay trazas del lado del servidor.
 - **Línea `ERROR` esperada** en el log por el timeout del cliente.
 - **Karate 1.5.2:** no es la última versión de Karate (2.1.4), que exige JUnit 6.
 
@@ -452,4 +717,5 @@ Ninguna de las dos es mejor en términos absolutos: Karate acelera las pruebas d
 
 - Evaluar la migración a Karate 2.x con JUnit 6.
 - Aislar los datos para ejecutar en paralelo.
-- Pruebas de rendimiento reutilizando los features con Karate Gatling.
+- Monitorear el servicio con un APM real (Instana) y comparar sus métricas con las de Gatling (ver [docs/monitoreo-instana.md](docs/monitoreo-instana.md)).
+- Agregar un endpoint de transferencias con reglas de negocio bancarias (saldo insuficiente, cuenta bloqueada).

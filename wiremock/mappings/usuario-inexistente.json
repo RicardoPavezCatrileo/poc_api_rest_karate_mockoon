@@ -1,0 +1,18 @@
+{
+  "name": "usuario-inexistente",
+  "priority": 5,
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/usuarios/[^/]+"
+  },
+  "response": {
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "status": 404,
+    "body": "{\n  \"codigo\": 404,\n  \"error\": \"Not Found\",\n  \"mensaje\": \"El usuario {{request.pathSegments.[2]}} no existe.\"\n}",
+    "transformers": [
+      "response-template"
+    ]
+  }
+}

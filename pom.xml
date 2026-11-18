@@ -26,6 +26,9 @@
         <!-- Gatling corre en otra JVM: estos valores se le pasan explícitamente -->
         <baseUrl>http://localhost:3001</baseUrl>
         <karate.env>local</karate.env>
+        <!-- Monitor de recursos (MonitorRecursos): vacío = busca el PID del mock por el puerto de baseUrl -->
+        <mockPid></mockPid>
+        <monitor.intervaloMs>1000</monitor.intervaloMs>
         <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
     </properties>
@@ -101,6 +104,8 @@
                         <jvmArg>-Dperfil=${perfil}</jvmArg>
                         <jvmArg>-DbaseUrl=${baseUrl}</jvmArg>
                         <jvmArg>-Dkarate.env=${karate.env}</jvmArg>
+                        <jvmArg>-DmockPid=${mockPid}</jvmArg>
+                        <jvmArg>-Dmonitor.intervaloMs=${monitor.intervaloMs}</jvmArg>
                         <!-- Bajo carga, el log DEBUG de cada solicitud distorsiona los tiempos -->
                         <jvmArg>-Dkarate.log.level=WARN</jvmArg>
                     </jvmArgs>

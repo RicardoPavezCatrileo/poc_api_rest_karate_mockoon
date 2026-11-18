@@ -1,0 +1,10 @@
+{
+  "_nota": "Mismas cuentas que src/test/resources/sql/datos.sql y el data bucket cuentas-iniciales del mock.",
+  "iniciales": [
+    { "id": 10, "usuarioId": 1, "tipo": "corriente", "estado": "activa", "saldo": 1500 },
+    { "id": 11, "usuarioId": 1, "tipo": "ahorro", "estado": "activa", "saldo": 3200.5 },
+    { "id": 20, "usuarioId": 2, "tipo": "corriente", "estado": "activa", "saldo": 250 },
+    { "id": 30, "usuarioId": 3, "tipo": "ahorro", "estado": "cerrada", "saldo": 0 }
+  ],
+  "transferenciaValida": { "cuentaOrigen": 10, "cuentaDestino": 20, "monto": 125.75 }
+}

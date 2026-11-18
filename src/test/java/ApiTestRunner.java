@@ -27,6 +27,7 @@ class ApiTestRunner {
             "classpath:contratos",
             "classpath:soap",
             "classpath:sql",
+            "classpath:transferencias",
     };
 
     @Test

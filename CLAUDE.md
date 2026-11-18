@@ -16,29 +16,41 @@ Requieren Mockoon en marcha, Desktop o CLI, nunca ambos en el mismo puerto.
 npx.cmd @mockoon/cli@9.10.0 validate --data .\mocks\usuarios-api.json
 npx.cmd @mockoon/cli@9.10.0 start --data .\mocks\usuarios-api.json --disable-log-to-file --log-transaction   # Terminal aparte
 .\mvnw.cmd test
-.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @timeout
+.\mvnw.cmd test "-Dkarate.options=--tags @smoke"       # También: @regression, @negative, @security, @contract, @soap, @sql, @banca, @timeout
 .\mvnw.cmd test "-Dkarate.options=--tags ~@timeout"    # Omite las pruebas lentas
 .\mvnw.cmd test "-Dkarate.options=classpath:usuarios/get-usuarios.feature"   # Un solo feature
 .\mvnw.cmd test "-Dkarate.env=ci"
 .\mvnw.cmd test "-DbaseUrl=http://localhost:3002"
+.\mvnw.cmd test-compile gatling:test "-Dperfil=carga"   # O estres; reporte en target/gatling
+node scripts\resumen-performance.mjs                     # TPS, latencias, recursos y hallazgos de la última ejecución
+docker compose up -d                                     # Mockoon (3001) y WireMock (8080) en contenedores; con Podman, ver README "Contenedores"
+podman run --rm -e BASE_URL=http://host.containers.internal:3001 -v "${PWD}\performance\k6:/scripts:ro" -v "${PWD}\target\k6:/resultados" docker.io/grafana/k6:2.3.0 run --quiet /scripts/carga.js   # k6
+.\mvnw.cmd test "-DbaseUrl=http://localhost:8080" "-Dkarate.options=classpath:health/health.feature classpath:usuarios/get-usuarios.feature classpath:auth/api-key.feature"   # Contra WireMock
+npx.cmd newman@6.2.3 run .\postman\usuarios-api.postman_collection.json -e .\postman\local.postman_environment.json
 ```
 
 En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HTML: `target/karate-reports/karate-summary.html`; log HTTP: `target/karate.log`.
 
 ## Arquitectura
 
-- `ApiTestRunner.java` es el único punto de entrada (surefire solo incluye esa clase). Ejecuta `classpath:` con `parallel(1)` y falla si hay escenarios fallidos. `-Dkarate.options` sobrescribe tags y rutas del Runner.
+- `ApiTestRunner.java` es el único punto de entrada (surefire solo incluye esa clase). Ejecuta una lista explícita de carpetas (`FEATURES_FUNCIONALES`) con `parallel(1)` y falla si hay escenarios fallidos: una carpeta nueva de features debe agregarse a esa lista o no se ejecuta. `-Dkarate.options` sobrescribe tags y rutas del Runner.
+- `performance/` queda fuera del Runner: sus features los ejecuta Gatling desde `performance/UsuariosSimulation.java` (perfiles `carga` y `estres` con `-Dperfil`). Antes de la carga corre `preparar-datos.feature`; los demás solo leen, porque varios usuarios virtuales comparten el mock. Gatling corre en otra JVM: `perfil`, `baseUrl` y `karate.env` se le pasan mediante propiedades del `pom.xml` (`jvmArgs`), y con log `WARN`.
+- `performance/MonitorRecursos` corre en los hooks `before()`/`after()` de la simulación y escribe `target/gatling-recursos/` (CSV por segundo y `resumen.json`). Busca el PID del mock por el puerto de `baseUrl` (`netstat` en Windows, `ss` en Linux) o lo toma de `-DmockPid`. En Windows `ProcessHandle` no expone la línea de comandos ni la memoria de otro proceso: la memoria se lee con `tasklist`. `scripts/resumen-performance.mjs` combina eso con `target/gatling/<lastRun>/js/stats.json` (`percentiles1..4` = p50, p75, p95, p99) y no decide si la prueba pasa; eso lo hacen las aserciones de Gatling. `TPS_MINIMO_CARGA` se deriva de la inyección del perfil `carga`: al cambiar la inyección, recalcularlo. `docs/monitoreo-instana.md` relaciona estas métricas con Instana, que no se puede ejecutar localmente. Si el mock corre en un contenedor de Podman, el PID que escucha en el puerto es el reenvío de puertos de Podman, no Mockoon: las columnas `*_mock` no miden el mock.
+- `performance/k6/carga.js` es la misma carga en k6 (inyección, nombres de solicitud y umbrales); al cambiar el perfil `carga` de Gatling, cambiarlo también. Desde un contenedor de Podman no se alcanza un Mockoon CLI nativo de Windows (`connection refused`): usar el Mockoon en contenedor.
 - Un solo hilo es obligatorio: el mock guarda los usuarios en un único data bucket compartido y los escenarios lo restablecen con `POST /api/test/reset`.
 - Los `.feature`, `karate-config.js` y `logback-test.xml` viven en `src/test/java` (el `pom.xml` los copia como recursos de prueba). Los datos de prueba van en `src/test/resources/data`, fuera de los `.feature`.
 - `health/health.feature` no está en la estructura de la especificación: se agregó porque el health check no pertenece a `usuarios/` ni a `contratos/`.
 - `common/` contiene features reutilizables (`reset.feature`, `login.feature`) y esquemas (`common/schemas/`). Llevan `@ignore` para que el Runner no los ejecute solos; se invocan con `call` o `callonce`.
 - `soporte/` (Java) valida contratos sin hacer solicitudes: `OpenApiContrato` contra `src/test/resources/contracts/openapi.yaml` (librería `openapi-request-validator-core`) y `XmlContrato` contra el XSD incluido en `contracts/usuarios.wsdl` (APIs XML del JDK). Ambos devuelven una lista de errores; en Karate se usa `match ... == []`. Al cambiar el mock, actualizar también estos contratos.
+- `soporte/BaseDeDatos` da acceso JDBC a un H2 en memoria (modo PostgreSQL) que `sql/datos-sql.feature` recrea en cada escenario desde `src/test/resources/sql` (`schema.sql`, `datos.sql`). Solo `PreparedStatement` con `?`, nunca SQL concatenado. `-Ddb.url`, `-Ddb.usuario` y `-Ddb.clave` apuntan a otra base. Los datos semilla deben coincidir con los usuarios iniciales del mock.
+- Documentos con resultados reales: `README.md`, `docs/informe-resultados.md`, `guia_qa_poc_api_rest_karate_mockoon.html` y `arquitectura.html` (tabla de cobertura del aviso, con lo parcial y lo pendiente). Al cambiar escenarios, umbrales o resultados, actualizarlos con cifras de una ejecución real. Los conteos por tag salen de los JSON de `target/karate-reports/` de una ejecución completa.
+- CI: `.github/workflows/api-tests.yml` y `azure-pipelines.yml` son equivalentes (validar mock, iniciar Mockoon CLI, Karate, Newman, Gatling, publicar reportes). Un cambio en uno se replica en el otro. `postman/` es una colección independiente ejecutada con Newman; no la usan los features.
 - `karate-config.js` centraliza `baseUrl`, timeouts y `maxResponseTimeMs`. Acepta `karate.env` `local` (por defecto) o `ci`; cualquier otro valor falla.
 
 ## Restricciones
 
 - Karate 1.5.2 con `karate-junit5`, por decisión del usuario: Karate 2.x solo publica `karate-junit6`. No actualizar a 2.x sin consultarlo.
-- Todas las solicitudes HTTP se hacen con Karate. No usar REST Assured, Postman/Newman ni otros clientes.
+- Todas las solicitudes HTTP de las pruebas automatizadas se hacen con Karate. No usar REST Assured ni otros clientes en el código Java ni en los features. La colección de Postman/Newman es un entregable aparte que demuestra ese requisito, no un reemplazo de Karate.
 - Todo escenario lleva `@regression` además de sus tags específicos.
 - El objetivo de la POC es demostrar los requisitos de una oferta de QA Automation backend (REST y SOAP, OpenAPI, SQL, Gatling, CI/CD con Azure DevOps, Git, Postman y curl). `mocks/usuarios-api.json` partió como copia del mock de Playwright, pero puede extenderse libremente para cubrir esos requisitos; solo debe seguir siendo compatible con Mockoon 9.10.0 y validarse con `mockoon-cli validate`. En la comparativa del README, indicar qué casos son exclusivos de esta POC.
 - No usar esperas fijas (`Thread.sleep`, `karate.pause`).
@@ -61,6 +73,9 @@ En PowerShell el argumento `-D...` completo va entre comillas dobles. Reporte HT
 ## Detalles del mock que no son evidentes
 
 - Las rutas se evalúan en orden: `lento`, `999` y DELETE van antes de la ruta CRUD `api/usuarios`.
+- Banca: `POST /api/transferencias` tiene una respuesta por regla, en orden (401, 403, 400, 422 esquema, 422 decimales, 422 misma cuenta, 404 origen, 404 destino, 422 origen no activa, 422 destino no activa, 422 saldo) y la 201 por defecto. Las reglas de negocio son reglas `templating` con `#each (dataRaw 'cuentas')` y regex `^si$` o `^existe$`. Las cuentas del data bucket `cuentas` deben coincidir con `sql/datos.sql` y con `data/cuentas.json`; el reset restaura `cuentas` desde `cuentas-iniciales` y vacía `transferencias`.
+- WireMock (`wiremock/`) replica solo lo que usan `health`, `get-usuarios` y `api-key` (sus datos salen del data bucket `usuarios-iniciales`). Si cambian esas rutas o esos features, actualizar también los stubs. Al pasar varias rutas en `-Dkarate.options`, usar rutas de archivo: con `classpath:health` como primera ruta, ese feature no se ejecutó.
+- Plantillas de Mockoon: `setVar` dentro de un `#each` solo vale para esa iteración, así que la 201 vuelve a recorrer las cuentas para mostrar los saldos. El helper `float` genera números aleatorios (faker), no convierte; para redondear a centavos se usa `divide (round (multiply x 100)) 100`. `eq` compara con `===`.
 - DELETE responde 204 sin cuerpo ni `Content-Type`.
 - `/api/usuarios/lento` tarda 15 s (`latency` y `retardo_ms` en el mock); debe coincidir con `timeouts.slowDelayMs` de `karate-config.js`.
 - 401 incluye `WWW-Authenticate: Bearer`; 403 es token válido sin permisos (`qa_sin_permisos`). Los tokens son cadenas fijas, no JWT.

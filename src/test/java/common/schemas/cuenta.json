@@ -1,0 +1,7 @@
+{
+  "id": "#number",
+  "usuarioId": "#number",
+  "tipo": "#regex (corriente|ahorro)",
+  "estado": "#regex (activa|cerrada)",
+  "saldo": "#number? _ >= 0"
+}

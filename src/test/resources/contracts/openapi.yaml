@@ -13,6 +13,7 @@ tags:
   - name: Usuarios
   - name: Autenticación
   - name: Errores
+  - name: Banca
 
 paths:
   /api/health:
@@ -220,6 +221,84 @@ paths:
         "401":
           $ref: "#/components/responses/Error"
 
+  /api/cuentas/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Banca]
+      summary: Obtiene una cuenta
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Una cuenta
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cuenta"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+
+  /api/transferencias:
+    get:
+      tags: [Banca]
+      summary: Lista las transferencias desde el último reset
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Transferencias realizadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransferenciaRegistrada"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Banca]
+      summary: Transfiere un monto entre dos cuentas activas
+      description: >
+        Reglas, en orden: token válido (401) y con permisos (403), JSON válido (400), esquema y máximo
+        2 decimales (422), cuentas distintas (422), cuentas existentes (404), cuentas activas (422) y saldo
+        suficiente (422). Una transferencia rechazada no modifica ningún saldo.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferenciaEntrada"
+      responses:
+        "201":
+          description: Transferencia realizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transferencia"
+        "400":
+          $ref: "#/components/responses/Error"
+        "401":
+          $ref: "#/components/responses/NoAutenticado"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+
   /api/errores/{codigo}:
     get:
       tags: [Errores]
@@ -322,6 +401,83 @@ components:
           $ref: "#/components/schemas/Rol"
         activo:
           type: boolean
+
+    Cuenta:
+      type: object
+      additionalProperties: false
+      required: [id, usuarioId, tipo, estado, saldo]
+      properties:
+        id:
+          type: integer
+        usuarioId:
+          type: integer
+        tipo:
+          type: string
+          enum: [corriente, ahorro]
+        estado:
+          type: string
+          enum: [activa, cerrada]
+        saldo:
+          type: number
+          minimum: 0
+
+    TransferenciaEntrada:
+      type: object
+      additionalProperties: false
+      required: [cuentaOrigen, cuentaDestino, monto]
+      properties:
+        cuentaOrigen:
+          type: integer
+          minimum: 1
+        cuentaDestino:
+          type: integer
+          minimum: 1
+        monto:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          maximum: 10000000
+          description: Máximo 2 decimales.
+
+    TransferenciaRegistrada:
+      type: object
+      additionalProperties: false
+      required: [id, cuentaOrigen, cuentaDestino, monto, estado]
+      properties:
+        id:
+          type: integer
+        cuentaOrigen:
+          type: integer
+        cuentaDestino:
+          type: integer
+        monto:
+          type: number
+        estado:
+          type: string
+          enum: [completada]
+
+    Transferencia:
+      type: object
+      additionalProperties: false
+      required: [id, cuentaOrigen, cuentaDestino, monto, estado, saldoOrigen, saldoDestino]
+      properties:
+        id:
+          type: integer
+        cuentaOrigen:
+          type: integer
+        cuentaDestino:
+          type: integer
+        monto:
+          type: number
+        estado:
+          type: string
+          enum: [completada]
+        saldoOrigen:
+          type: number
+          minimum: 0
+        saldoDestino:
+          type: number
+          minimum: 0
 
     Error:
       type: object
